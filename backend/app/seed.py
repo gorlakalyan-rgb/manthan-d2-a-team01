@@ -227,8 +227,9 @@ def seed(conn, n_claims: int = 3000, rng_seed: int = 42, now: datetime | None = 
                 decided = t
         step_entered = None
         if status == "PENDING_APPROVAL":
-            # Healthy baseline: nothing waits > 48h at its current step (the SRE drill creates the stale one).
-            step_entered = now - timedelta(hours=rng.uniform(1, 46))
+            # Healthy baseline: nothing waits > 40h at its current step, so a fresh stack stays under the
+            # 48h warning SLA for ~8 hours (the SRE drill creates the stale one).
+            step_entered = now - timedelta(hours=rng.uniform(1, 40))
         if status == "APPROVED" and age_days > 12:
             status, paid = "PAID", (decided or submitted) + timedelta(days=rng.randint(3, 9))
         claim_rows.append((claim_id, emp["id"], f"{rng.choice(['Client visit', 'Team offsite', 'Conference', 'Sales trip', 'Office purchase', 'Training'])} - {submitted:%b %Y}",

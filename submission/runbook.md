@@ -5,12 +5,14 @@
 ## 1. Service level objectives
 | SLI | SLO | Source |
 |---|---|---|
-| Approval freshness: oldest claim waiting at its current step | < 72 h (3 working days) | `expenseflow_oldest_pending_approval_hours` |
+| Approval freshness: oldest claim waiting at its current step | **Warning SLA < 48 h** (nudge the approver); **critical < 72 h** (3 working days, page on-call) | `expenseflow_oldest_pending_approval_hours` |
 | Approval backlog | < 150 claims pending across all steps | `sum(expenseflow_approval_queue_size)` |
 | Page/API latency p95 (excluding /metrics) | < 1 s over 5 min | `expenseflow_http_request_duration_seconds` |
 | Availability | `/healthz` = 200 and Prometheus `up == 1` | `up{job="expenseflow"}` |
 
-Thresholds were validated against the seeded data: the healthy baseline is ~44 h oldest pending (seed caps current-step age at 46 h) and normal per-step approval takes 2–60 h, so 72 h only fires when a claim is genuinely stuck.
+Thresholds were validated against the seeded data. The seed caps current-step age at 40 h, so a fresh stack stays under the 48 h warning for about 8 hours, and normal per-step approval takes 2–60 h. 48 h is the team's internal warning SLA; 72 h means a claim is genuinely stuck and pages on-call. The dashboard tile says "Warning SLA 48 h · page at 72 h" to match these rules exactly.
+
+**Before a demo:** reset to a clean green baseline with `docker compose down --volumes && docker compose up -d --build --wait`. The data ages in real time, so a stack seeded more than about 8 hours earlier will show the 48 h warning.
 
 ## 2. Quick reference
 ```bash
@@ -24,8 +26,12 @@ docker compose exec db psql -U expenseflow         # database shell
 
 ## 3. Alerts
 
+### Alert: OldestPendingApprovalWarning
+**Fires when** `expenseflow_oldest_pending_approval_hours > 48` for 1 minute. **Severity:** warning (no page). **Impact:** a claim is about to breach the SLA.
+**Action:** find the claim (Audit queue → "All pending (oversight, oldest first)", or the SQL in the next section) and **nudge the approver** by message or email. Check whether they are on leave; if so, ask them to set a delegate now, before the 72 h critical alert pages on-call. Nothing else is needed if the claim moves within the business day.
+
 ### Alert: OldestPendingApprovalTooOld
-**Fires when** `expenseflow_oldest_pending_approval_hours > 72` for 1 minute. **Severity:** warning. **Impact:** an employee is waiting for reimbursement; usually the approver is on leave without a delegate.
+**Fires when** `expenseflow_oldest_pending_approval_hours > 72` for 1 minute. **Severity:** critical (pages on-call). **Impact:** an employee is waiting for reimbursement; usually the approver is on leave without a delegate. On-call must delegate or escalate now (steps below).
 
 Diagnose:
 1. Grafana panel "Oldest pending approval" shows the age; "Approval queue size by step" shows which step is stuck.

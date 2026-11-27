@@ -39,6 +39,7 @@ A claim (#1611 in run 1, #1821 in run 2) sat at the MANAGER step because the app
 | # | Action | Owner | Status |
 |---|---|---|---|
 | 1 | Oversight queue for finance (all pending, oldest first) | Team 01 | Done |
+| 1b | Two-tier approval-age alerting: `OldestPendingApprovalWarning` > 48 h (warning, nudge the approver) and `OldestPendingApprovalTooOld` > 72 h raised to **critical** (page on-call). Dashboard tile reads "Warning SLA 48 h · page at 72 h". The drills above ran with the single 72 h rule. | Team 01 (team decision after review) | Done |
 | 2 | Warn approvers who have pending items when they have no delegate set for upcoming leave | Team 01 | Backlog |
 | 3 | Auto-escalate a MANAGER step to the manager's manager after 72 h (configurable in `policy_rules`) | Team 01 | Backlog |
 | 4 | Add an alert on per-step age (not just global oldest) so a stuck AUDITOR queue is visible separately | Team 01 | Backlog |

@@ -150,7 +150,7 @@ function DashboardBody({ d, months, navigate }) {
           <Count value={k.avg_approval_hours} decimals={1} suffix=" h" />
         </Kpi>
         <Kpi icon={AlertTriangle} label="Policy violations" i={3} to="/audit" foot={<span>{violationRate.toFixed(1)}% of claims flagged</span>}><Count value={k.violation_count} /></Kpi>
-        <Kpi icon={Hourglass} label="Oldest pending" i={4} foot={<span>SLA 48 h</span>}>
+        <Kpi icon={Hourglass} label="Oldest pending" i={4} foot={<span>Warning SLA 48 h · page at 72 h</span>}>
           <div className="row" style={{ justifyContent: 'space-between' }}>
             <span><Count value={k.oldest_pending_hours} decimals={1} suffix=" h" /></span>
             <Ring value={slaFrac} size={46} stroke={6} color={slaFrac > 0.85 ? 'var(--color-danger)' : slaFrac > 0.6 ? 'var(--accent)' : 'var(--color-success)'}>{Math.round(slaFrac * 100)}%</Ring>

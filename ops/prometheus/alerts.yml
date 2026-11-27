@@ -1,13 +1,22 @@
 groups:
   - name: expenseflow
     rules:
-      - alert: OldestPendingApprovalTooOld
-        # Brief: alert on oldest pending approval. Threshold 72h = 3 working days (validated against seed: normal max ~60h per step).
-        expr: expenseflow_oldest_pending_approval_hours > 72
+      # Two tiers on the brief's "oldest pending approval" metric (team decision, 27 Nov):
+      #   48h = internal warning SLA (nudge the approver), 72h = critical page (on-call delegates / escalates).
+      - alert: OldestPendingApprovalWarning
+        expr: expenseflow_oldest_pending_approval_hours > 48
         for: 1m
         labels: {severity: warning}
         annotations:
-          summary: "A claim has waited {{ $value | humanize }}h for approval (threshold 72h)"
+          summary: "A claim has waited {{ $value | humanize }}h for approval (warning SLA 48h)"
+          runbook: "submission/runbook.md#alert-oldestpendingapprovalwarning"
+      - alert: OldestPendingApprovalTooOld
+        # Threshold 72h = 3 working days (validated against seed: normal max ~60h per step).
+        expr: expenseflow_oldest_pending_approval_hours > 72
+        for: 1m
+        labels: {severity: critical}
+        annotations:
+          summary: "A claim has waited {{ $value | humanize }}h for approval (critical, page at 72h)"
           runbook: "submission/runbook.md#alert-oldestpendingapprovaltooold"
       - alert: ApprovalQueueBacklog
         expr: sum(expenseflow_approval_queue_size) > 150
