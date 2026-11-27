@@ -30,9 +30,9 @@ test('E2E-01 employee submits over-limit cab claim, manager approves it', async 
     <b style="font-size:22px">TOTAL ₹2,600.00</b><br><small>demo data only</small></div>`);
   const receiptPng = await page.locator('div').first().screenshot();
   await page.goto('/login');
-  await page.screenshot({ path: `${SHOTS}/01-login.png`, fullPage: true });
+  await page.screenshot({ path: `${SHOTS}/01-login.png`, fullPage: false });
   await login(page, 'employee');
-  await page.screenshot({ path: `${SHOTS}/02-my-claims.png`, fullPage: true });
+  await page.screenshot({ path: `${SHOTS}/02-my-claims.png`, fullPage: false });
   await page.goto('/claims/new');
   await page.getByLabel('Claim title').fill(title);
   await page.getByLabel('Category').first().selectOption('local_cab');
@@ -41,20 +41,20 @@ test('E2E-01 employee submits over-limit cab claim, manager approves it', async 
   await page.getByLabel('Vendor').first().fill(`Uber E2E ${Date.now() % 100000}`);
   await page.locator('input[type=file]').first().setInputFiles({ name: 'cab.png', mimeType: 'image/png', buffer: receiptPng });
   await expect(page.getByText('cab.png')).toBeVisible();
-  await page.screenshot({ path: `${SHOTS}/03-claim-editor.png`, fullPage: true });
+  await page.screenshot({ path: `${SHOTS}/03-claim-editor.png`, fullPage: false });
   await page.getByRole('button', { name: 'Submit claim' }).click();
   await expect(page).toHaveURL(/\/claims\/\d+$/);
   await expect(page.getByText(/per-trip limit/)).toBeVisible();
   await expect(page.getByText(/Possible duplicate/)).toHaveCount(0);
-  await page.screenshot({ path: `${SHOTS}/04-claim-detail-policy-flags.png`, fullPage: true });
+  await page.screenshot({ path: `${SHOTS}/04-claim-detail-policy-flags.png`, fullPage: false });
   await logout(page);
 
   await login(page, 'manager');
   await page.goto('/approvals');
-  await page.screenshot({ path: `${SHOTS}/05-approvals-inbox.png`, fullPage: true });
+  await page.screenshot({ path: `${SHOTS}/05-approvals-inbox.png`, fullPage: false });
   await page.getByRole('link', { name: new RegExp(title) }).first().click();
   await expect(page.getByRole('heading', { name: 'Your decision' })).toBeVisible();
-  await page.screenshot({ path: `${SHOTS}/06-review-side-by-side.png`, fullPage: true });
+  await page.screenshot({ path: `${SHOTS}/06-review-side-by-side.png`, fullPage: false });
   await page.getByRole('button', { name: 'Approve', exact: true }).click();
   await expect(page.getByText(/Approved\./)).toBeVisible();
 });
@@ -73,27 +73,31 @@ test('E2E-02 phone width 390px: claim capture has no horizontal scroll and is ke
     reached = await page.evaluate(() => document.activeElement?.textContent?.includes('Submit claim'));
   }
   expect(reached).toBe(true);
-  await page.screenshot({ path: `${SHOTS}/07-mobile-claim-capture-390px.png`, fullPage: true });
+  await page.evaluate(() => window.scrollTo(0, 0));
+  await page.waitForTimeout(500);
+  await page.screenshot({ path: `${SHOTS}/07-mobile-claim-capture-390px.png`, fullPage: false });
 });
 
 test('E2E-03 auditor queue filters and dashboard charts render', async ({ page }) => {
   await login(page, 'auditor');
   await page.goto('/audit');
   await expect(page.getByRole('heading', { level: 1 })).toBeVisible();
-  await page.screenshot({ path: `${SHOTS}/08-audit-queue-bulk.png`, fullPage: true });
+  await page.screenshot({ path: `${SHOTS}/08-audit-queue-bulk.png`, fullPage: false });
   await page.goto('/dashboard');
+  await expect(page.locator('.skeleton').first()).toHaveCount(0, { timeout: 15000 });
   await expect(page.locator('svg').first()).toBeVisible();
-  await page.screenshot({ path: `${SHOTS}/09-dashboard.png`, fullPage: true });
+  await page.waitForTimeout(1500);
+  await page.screenshot({ path: `${SHOTS}/09-dashboard.png`, fullPage: false });
 });
 
 test('E2E-04 head sees payouts and policy configuration', async ({ page }) => {
   await login(page, 'head');
   await page.goto('/payouts');
   await expect(page.getByRole('heading', { level: 1 })).toBeVisible();
-  await page.screenshot({ path: `${SHOTS}/10-payouts.png`, fullPage: true });
+  await page.screenshot({ path: `${SHOTS}/10-payouts.png`, fullPage: false });
   await page.goto('/policy');
   await expect(page.getByText('CAB_TRIP_LIMIT').first()).toBeVisible();
-  await page.screenshot({ path: `${SHOTS}/11-policy-config.png`, fullPage: true });
+  await page.screenshot({ path: `${SHOTS}/11-policy-config.png`, fullPage: false });
 });
 
 test('E2E-05 employee cannot open finance pages', async ({ page }) => {
