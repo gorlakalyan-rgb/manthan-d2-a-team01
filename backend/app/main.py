@@ -14,7 +14,9 @@ from fastapi.responses import FileResponse, JSONResponse, PlainTextResponse, Res
 from starlette.middleware.sessions import SessionMiddleware
 
 from . import metrics, workflow as wf
-from .auth import SESSION_SECRET, USER_SQL, current_user, err, require_roles, verify_password
+from itsdangerous import BadSignature, SignatureExpired, URLSafeTimedSerializer
+
+from .auth import SESSION_SECRET, USER_SQL, current_user, err, hash_password, require_roles, verify_password
 from .db import Jsonb, audit, connect, get_conn
 from .policy import CATEGORIES, DEFAULT_CONFIG
 
@@ -79,16 +81,95 @@ def prometheus_metrics(conn=Depends(get_conn)):
 
 
 # ------------------------------------------------------------------ auth
+ROLES = ("employee", "manager", "auditor", "head")
+
+
 @app.post("/api/auth/login")
 def login(body: dict, request: Request, conn=Depends(get_conn)):
     email = str(body.get("email", "")).strip().lower()
-    row = conn.execute("SELECT id, password_hash FROM users WHERE lower(email) = %s", (email,)).fetchone()
+    row = conn.execute("SELECT id, role, password_hash FROM users WHERE lower(email) = %s", (email,)).fetchone()
     if not row or not verify_password(str(body.get("password", "")), row["password_hash"]):
         raise err(401, "BAD_CREDENTIALS", "Email or password is incorrect.")
+    role = str(body.get("role") or "").strip().lower()
+    if role and role not in ROLES:
+        raise err(422, "VALIDATION", "Choose a valid role.")
+    if role and role != row["role"]:
+        # Only reachable with the right password, so naming the mismatch does not leak account existence.
+        raise err(403, "ROLE_MISMATCH", "This account is not registered for the role you selected.")
     request.session.clear()
     request.session["uid"] = row["id"]
     audit(conn, actor_id=row["id"], entity="user", entity_id=row["id"], action="login")
     return {"user": conn.execute(USER_SQL, (row["id"],)).fetchone()}
+
+
+# ------------------------------------------------------------------ password recovery
+# Stateless, signed reset tokens (no extra table): the token carries the user id and a fingerprint of the
+# current password hash, so it stops working as soon as the password changes (single use) and after 15 min.
+RESET_MAX_AGE = 15 * 60
+RESET_LINK_IN_RESPONSE = os.getenv("RESET_LINK_IN_RESPONSE", "0") == "1"   # demo only: no mail server
+_reset_signer = URLSafeTimedSerializer(SESSION_SECRET, salt="expenseflow-password-reset")
+
+
+def _pw_fingerprint(password_hash: str) -> str:
+    return hashlib.sha256(password_hash.encode()).hexdigest()[:16]
+
+
+def _user_for_token(conn, token: str) -> dict:
+    try:
+        data = _reset_signer.loads(token, max_age=RESET_MAX_AGE)
+    except SignatureExpired:
+        raise err(400, "TOKEN_EXPIRED", "This reset link has expired. Request a new one.")
+    except BadSignature:
+        raise err(400, "TOKEN_INVALID", "This reset link is not valid. Request a new one.")
+    row = conn.execute("SELECT id, email, password_hash FROM users WHERE id = %s", (data.get("uid"),)).fetchone()
+    if not row or _pw_fingerprint(row["password_hash"]) != data.get("fp"):
+        raise err(400, "TOKEN_USED", "This reset link has already been used. Request a new one.")
+    return row
+
+
+@app.post("/api/auth/forgot")
+def forgot_password(body: dict, request: Request, conn=Depends(get_conn)):
+    email = str(body.get("email", "")).strip().lower()
+    if not email or "@" not in email:
+        raise err(422, "VALIDATION", "Enter the email address you sign in with.")
+    out = {"ok": True, "message": "If an account exists for that email, a reset link is on its way. It expires in 15 minutes."}
+    row = conn.execute("SELECT id, password_hash FROM users WHERE lower(email) = %s", (email,)).fetchone()
+    if row:
+        token = _reset_signer.dumps({"uid": row["id"], "fp": _pw_fingerprint(row["password_hash"])})
+        audit(conn, actor_id=row["id"], entity="user", entity_id=row["id"], action="password_reset_requested")
+        if RESET_LINK_IN_RESPONSE:
+            out["reset_url"] = f"/reset-password?token={token}"
+    return out   # same response whether or not the account exists (no user enumeration)
+
+
+@app.get("/api/auth/reset")
+def reset_check(token: str, conn=Depends(get_conn)):
+    row = _user_for_token(conn, token)
+    local, _, domain = row["email"].partition("@")
+    return {"valid": True, "email_hint": f"{local[:2]}{'•' * max(1, len(local) - 2)}@{domain}"}
+
+
+def _password_problem(pw: str) -> str | None:
+    if len(pw) < 8:
+        return "Use at least 8 characters."
+    if not any(c.isalpha() for c in pw) or not any(c.isdigit() for c in pw):
+        return "Use both letters and numbers."
+    if len(pw) > 128:
+        return "Use 128 characters or fewer."
+    return None
+
+
+@app.post("/api/auth/reset")
+def reset_password(body: dict, request: Request, conn=Depends(get_conn)):
+    row = _user_for_token(conn, str(body.get("token", "")))
+    pw = str(body.get("password", ""))
+    problem = _password_problem(pw)
+    if problem:
+        raise err(422, "WEAK_PASSWORD", problem)
+    conn.execute("UPDATE users SET password_hash = %s WHERE id = %s", (hash_password(pw), row["id"]))
+    audit(conn, actor_id=row["id"], entity="user", entity_id=row["id"], action="password_reset")
+    request.session.clear()
+    return {"ok": True}
 
 
 @app.post("/api/auth/logout")

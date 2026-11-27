@@ -318,3 +318,33 @@ def test_employee_directory_scoping(app_client):
     assert mgr.get(f"/api/employees/{me['id']}").status_code == 404  # outside the manager's reporting line
     detail = head.get(f"/api/employees/{team[0]['id']}").json()
     assert {"employee", "by_month", "by_category", "flags", "recent_claims", "direct_reports", "manager_chain"} <= detail.keys()
+
+
+def test_login_with_role_and_password_reset(app_client):
+    c = app_client()
+    ok = c.post("/api/auth/login", json={"email": MGR, "password": "demo123", "role": "manager"}, headers=H)
+    assert ok.status_code == 200
+    wrong = app_client().post("/api/auth/login", json={"email": MGR, "password": "demo123", "role": "head"}, headers=H)
+    assert wrong.status_code == 403 and wrong.json()["code"] == "ROLE_MISMATCH"
+    bad = app_client().post("/api/auth/login", json={"email": MGR, "password": "nope", "role": "manager"}, headers=H)
+    assert bad.status_code == 401
+
+    import app.main as m
+    m.RESET_LINK_IN_RESPONSE = True
+    try:
+        anon = app_client()
+        unknown = anon.post("/api/auth/forgot", json={"email": "nobody@example.test"}, headers=H).json()
+        assert unknown["ok"] and "reset_url" not in unknown           # same answer, no enumeration
+        r = anon.post("/api/auth/forgot", json={"email": EMP2}, headers=H).json()
+        token = r["reset_url"].split("token=")[1]
+        assert anon.get("/api/auth/reset", params={"token": token}).json()["valid"]
+        weak = anon.post("/api/auth/reset", json={"token": token, "password": "short"}, headers=H)
+        assert weak.status_code == 422 and weak.json()["code"] == "WEAK_PASSWORD"
+        assert anon.post("/api/auth/reset", json={"token": token, "password": "NewPass2026"}, headers=H).status_code == 200
+        reused = anon.post("/api/auth/reset", json={"token": token, "password": "Another2026"}, headers=H)
+        assert reused.status_code == 400 and reused.json()["code"] == "TOKEN_USED"   # single use
+        assert anon.post("/api/auth/login", json={"email": EMP2, "password": "NewPass2026"}, headers=H).status_code == 200
+        assert app_client().post("/api/auth/login", json={"email": EMP2, "password": "demo123"}, headers=H).status_code == 401
+        assert anon.get("/api/auth/reset", params={"token": "garbage"}).json()["code"] == "TOKEN_INVALID"
+    finally:
+        m.RESET_LINK_IN_RESPONSE = False

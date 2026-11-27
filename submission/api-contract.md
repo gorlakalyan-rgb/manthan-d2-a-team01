@@ -64,14 +64,27 @@ POST /api/auth/login
 X-Requested-With: ExpenseFlow
 Content-Type: application/json
 
-{"email": "asha.rao@expenseflow.test", "password": "demo123"}
+{"email": "asha.rao@expenseflow.test", "password": "demo123", "role": "employee"}
 ```
+`role` is optional for API clients; the sign-in page always sends it (`employee` | `manager` | `auditor` | `head`).
 `200` + `Set-Cookie: session=...; HttpOnly; SameSite=Lax; Path=/`
 ```json
 {"user": {"id": 37, "name": "Asha Rao", "email": "asha.rao@expenseflow.test", "role": "employee",
           "department": "Sales", "manager_id": 12, "is_manager": false}}
 ```
-Errors: 400 malformed body · 401 `INVALID_CREDENTIALS` · 403 `CSRF_HEADER_MISSING` · 422 email/password missing.
+Errors: 400 malformed body · 401 `BAD_CREDENTIALS` · 403 `ROLE_MISMATCH` (right password, wrong role chosen) · 403 `CSRF` · 422 unknown role.
+
+### POST /api/auth/forgot — anyone
+Body `{"email": "..."}` → always `200 {"ok": true, "message": "If an account exists…"}` (same answer for unknown emails, so accounts cannot be discovered).
+Creates a signed reset token valid **15 minutes** and **single use** (it embeds a fingerprint of the current password hash).
+Demo only: with `RESET_LINK_IN_RESPONSE=1` (no mail server) the response also contains `reset_url`. Audited as `password_reset_requested`.
+
+### GET /api/auth/reset?token=… — anyone
+`200 {"valid": true, "email_hint": "em••••@demo.expenseflow.test"}` · 400 `TOKEN_INVALID` | `TOKEN_EXPIRED` | `TOKEN_USED`.
+
+### POST /api/auth/reset — anyone holding a valid token
+Body `{"token": "...", "password": "..."}` → `200 {"ok": true}`; the old password and the token stop working. Audited as `password_reset`.
+Errors: 400 token errors as above · 422 `WEAK_PASSWORD` (min 8 chars, letters and numbers).
 
 ### POST /api/auth/logout — user
 Request: no body. `200 {"ok": true}` and the cookie is cleared. Errors: 401 · 403 (CSRF).

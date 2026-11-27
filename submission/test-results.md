@@ -6,9 +6,9 @@ All results below are from real runs. Unless stated otherwise they ran on a team
 | Suite | Tool | Result | Evidence |
 |---|---|---|---|
 | Policy engine unit tests (every rule + boundaries) | pytest | **23 / 23 passed** | `backend/tests/test_policy.py` |
-| API / workflow integration (thresholds, delegation, self-approval, concurrency, payouts, audit, policy config, uploads, oversight queue, employee directory) | pytest | **22 / 22 passed** (PR #3 added `test_employee_directory_scoping`) | `backend/tests/test_api.py`, `test-evidence/pytest-junit-pg16-sandbox.xml` |
-| **Total backend — latest** | pytest on PostgreSQL 16.15 (sandbox), commit `ce25df1` | **45 passed, 0 failed** | `test-evidence/pytest-summary-pg16-sandbox.txt` |
-| Total backend — earlier run (before PR #3) | pytest on PostgreSQL 18.7 (Docker) | 44 passed, 0 failed | `test-evidence/pytest-summary.txt`, `test-evidence/pytest-junit.xml` |
+| API / workflow integration (thresholds, delegation, self-approval, concurrency, payouts, audit, policy config, uploads, oversight queue, employee directory, sign-in role, password reset) | pytest on PostgreSQL 18 | **23 / 23 passed** | `backend/tests/test_api.py`, `test-evidence/pytest-junit.xml` |
+| **Total backend — latest** | pytest on PostgreSQL 18 | **46 passed, 0 failed** (incl. employee directory scoping, sign-in role check and password reset) | `test-evidence/pytest-summary.txt` |
+| Total backend — earlier run (commit `ce25df1`, before sign-in/password-reset tests) | pytest on PostgreSQL 16.15 (sandbox) | 45 passed, 0 failed | `test-evidence/pytest-summary-pg16-sandbox.txt`, `test-evidence/pytest-junit-pg16-sandbox.xml` |
 | UI end-to-end (Playwright 1.60; Edge locally, Chromium via `PW_EXECUTABLE` in CI) | Playwright | **5 / 5 passed** (re-run after evidence fixes, reduced motion, 1440 × 900) | `frontend/e2e/expenseflow.spec.js`, `test-evidence/playwright-junit.xml`, `screenshots/` (all 11 regenerated and inspected) |
 | 10 written E2E cases (test plan §E2E) | `ops/e2e_cases.py` against live stack | **10 / 10 passed** | `test-evidence/e2e-cases-results.csv` |
 | SRE incident drill | `ops/drill.py` | **Alert fired in 60–66 s, resolved in 5 s** | `drill-output.txt`, `incident-rca.md` |
@@ -81,10 +81,10 @@ Two separate measurements. They are not interchangeable: the automated one has n
 
 | Step | Time |
 |---|---|
-| Open claim from inbox → review screen ready | 369 ms |
-| Receipt rendered beside the lines | 131 ms |
-| Approve click → "Approved." confirmation | 159 ms |
-| **Total (excluding the evidence screenshot)** | **659 ms** |
+| Open claim from inbox → review screen ready | 373 ms |
+| Receipt rendered beside the lines | 84 ms |
+| Approve click → "Approved." confirmation | 140 ms |
+| **Total (excluding the evidence screenshot)** | **597 ms** |
 
 **B. Manual stopwatch (live, human)** — to be filled in from a real run by a team member.
 

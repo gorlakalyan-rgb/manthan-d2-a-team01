@@ -18,6 +18,8 @@ services:
     environment:
       DATABASE_URL: postgresql://expenseflow:${POSTGRES_PASSWORD:-expenseflow}@db:5432/expenseflow
       SESSION_SECRET: ${SESSION_SECRET:-dev-only-change-me}
+      # Demo only: there is no mail server, so the reset link is returned to the browser. Set 0 for real use.
+      RESET_LINK_IN_RESPONSE: ${RESET_LINK_IN_RESPONSE:-1}
     ports: ["8080:8080"]
     volumes: [uploads:/data/uploads]
     depends_on:

@@ -48,10 +48,13 @@ test.beforeEach(async ({ page }) => {
   await page.emulateMedia({ reducedMotion: 'reduce' });
 });
 
+const ROLE_LABEL = { employee: 'Employee', employee2: 'Employee', manager: 'Manager', auditor: 'Finance auditor', head: 'Finance head' };
+
 async function login(page, who) {
   await page.goto('/login');
   await page.getByLabel('Email').fill(`${who}@demo.expenseflow.test`);
-  await page.getByLabel('Password').fill('demo123');
+  await page.getByLabel('Password', { exact: true }).fill('demo123');
+  await page.getByRole('radio', { name: ROLE_LABEL[who], exact: true }).click();
   await page.getByRole('button', { name: 'Sign in' }).click();
   await expect(page.getByRole('button', { name: 'Log out' })).toBeVisible();
 }
@@ -69,7 +72,7 @@ test('E2E-01 employee submits over-limit cab claim, manager approves it', async 
     <b style="font-size:22px">TOTAL ₹2,600.00</b><br><small>demo data only</small></div>`);
   const receiptPng = await page.locator('div').first().screenshot();
   await page.goto('/login');
-  await expect(page.locator('.persona')).toHaveCount(5);            // all five demo personas rendered
+  await expect(page.getByRole('radio')).toHaveCount(4);              // role picker: all four roles rendered
   await expect(page.getByText('3-step')).toBeInViewport();           // hero stats not clipped
   await settle(page);
   await page.screenshot({ path: `${SHOTS}/01-login.png`, fullPage: false, animations: 'disabled', caret: 'hide' });

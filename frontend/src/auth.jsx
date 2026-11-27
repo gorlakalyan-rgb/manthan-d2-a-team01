@@ -23,8 +23,8 @@ export function AuthProvider({ children }) {
     setUnauthorizedHandler(() => setUser(null));
   }, [refresh]);
 
-  const login = useCallback(async (email, password) => {
-    const data = await post('/api/auth/login', { email, password });
+  const login = useCallback(async (email, password, role) => {
+    const data = await post('/api/auth/login', { email, password, ...(role ? { role } : {}) });
     if (data?.user) setUser(data.user);
     else await refresh();
     return data?.user;
