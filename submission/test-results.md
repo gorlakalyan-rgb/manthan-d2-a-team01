@@ -6,8 +6,8 @@ All results below are from real runs on this laptop against PostgreSQL 18.7 in D
 | Suite | Tool | Result | Evidence |
 |---|---|---|---|
 | Policy engine unit tests (every rule + boundaries) | pytest | **23 / 23 passed** | `backend/tests/test_policy.py` |
-| API / workflow integration (thresholds, delegation, self-approval, concurrency, payouts, audit, policy config, uploads) | pytest on PostgreSQL 18 | **21 / 21 passed** | `backend/tests/test_api.py`, `test-evidence/pytest-junit.xml` |
-| **Total backend** | pytest | **44 passed, 0 failed** | `test-evidence/pytest-summary.txt` |
+| API / workflow integration (thresholds, delegation, self-approval, concurrency, payouts, audit, policy config, uploads, employee directory, sign-in role, password reset) | pytest on PostgreSQL 18 | **23 / 23 passed** | `backend/tests/test_api.py`, `test-evidence/pytest-junit.xml` |
+| **Total backend** | pytest | **46 passed, 0 failed** (incl. employee directory scoping, sign-in role check and password reset) | `test-evidence/pytest-summary.txt` |
 | UI end-to-end (Playwright 1.60; Edge locally, Chromium via `PW_EXECUTABLE` in CI) | Playwright | **5 / 5 passed** (re-run after evidence fixes, reduced motion, 1440 × 900) | `frontend/e2e/expenseflow.spec.js`, `test-evidence/playwright-junit.xml`, `screenshots/` (all 11 regenerated and inspected) |
 | 10 written E2E cases (test plan §E2E) | `ops/e2e_cases.py` against live stack | **10 / 10 passed** | `test-evidence/e2e-cases-results.csv` |
 | SRE incident drill | `ops/drill.py` | **Alert fired in 60–66 s, resolved in 5 s** | `drill-output.txt`, `incident-rca.md` |
@@ -63,10 +63,10 @@ Two separate measurements. They are not interchangeable: the automated one has n
 
 | Step | Time |
 |---|---|
-| Open claim from inbox → review screen ready | 369 ms |
-| Receipt rendered beside the lines | 131 ms |
-| Approve click → "Approved." confirmation | 159 ms |
-| **Total (excluding the evidence screenshot)** | **659 ms** |
+| Open claim from inbox → review screen ready | 391 ms |
+| Receipt rendered beside the lines | 97 ms |
+| Approve click → "Approved." confirmation | 109 ms |
+| **Total (excluding the evidence screenshot)** | **597 ms** |
 
 **B. Manual stopwatch (live, human)** — to be filled in from a real run by a team member.
 

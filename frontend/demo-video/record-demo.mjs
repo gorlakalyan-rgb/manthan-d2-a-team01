@@ -43,7 +43,9 @@ async function login(page, who) {
   if (await out.count()) { await out.first().click(); await page.getByRole('heading', { name: 'Sign in' }).waitFor(); }
   await page.goto(`${BASE}/login`);
   await page.getByLabel('Email').fill(`${who}@demo.expenseflow.test`);
-  await page.getByLabel('Password').fill('demo123');
+  await page.getByLabel('Password', { exact: true }).fill('demo123');
+  const role = { employee: 'Employee', employee2: 'Employee', manager: 'Manager', auditor: 'Finance auditor', head: 'Finance head' }[who];
+  await page.getByRole('radio', { name: role, exact: true }).click();
   await page.getByRole('button', { name: 'Sign in' }).click();
   await page.getByRole('button', { name: 'Log out' }).waitFor();
 }

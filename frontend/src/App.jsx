@@ -5,6 +5,8 @@ import { roleCaps, useAuth } from './auth.jsx';
 import Shell from './components/Shell.jsx';
 import { AppIcon } from './components/brand.jsx';
 import Login from './pages/Login.jsx';
+import ForgotPassword from './pages/ForgotPassword.jsx';
+import ResetPassword from './pages/ResetPassword.jsx';
 import MyClaims from './pages/MyClaims.jsx';
 import ClaimEditor from './pages/ClaimEditor.jsx';
 import ClaimDetail from './pages/ClaimDetail.jsx';
@@ -67,6 +69,8 @@ export default function App() {
     );
   }
   if (!user) {
+    if (location.pathname === '/forgot-password') return <ForgotPassword />;
+    if (location.pathname === '/reset-password') return <ResetPassword />;
     if (location.pathname !== '/login') return <Navigate to="/login" replace state={{ from: location.pathname }} />;
     return <Login />;
   }
@@ -78,6 +82,8 @@ export default function App() {
         transition={{ duration: 0.18, ease: [0.2, 0.8, 0.2, 1] }}>
       <Routes location={location}>
         <Route path="/" element={<Navigate to={homeFor(user)} replace />} />
+        <Route path="/forgot-password" element={<Navigate to="/settings" replace />} />
+        <Route path="/reset-password" element={<ResetPassword />} />
         <Route path="/login" element={<Navigate to={location.state?.from || homeFor(user)} replace />} />
         <Route path="/claims" element={<MyClaims />} />
         <Route path="/claims/new" element={<ClaimEditor />} />

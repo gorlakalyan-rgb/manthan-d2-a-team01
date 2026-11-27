@@ -171,11 +171,11 @@ Below 720 px the table turns into labelled cards (`table.responsive`).
 
 | Check | Implementation |
 |---|---|
-| Skip link | "Skip to main content" (`.skip-link`, `Shell.jsx`); "Skip to sign-in form" on login |
+| Skip link | "Skip to main content" (`.skip-link`, `Shell.jsx`); "Skip to form" on sign-in, forgot-password and reset-password |
 | Focus management | `<main tabIndex=-1>` receives focus on every route change; dialogs use native `<dialog>` with focus trap; Esc closes palette, sheets, drawer |
 | Visible focus | 2 px focus ring token `--focus-ring` on all inputs, buttons, links |
 | Keyboard operation | Ctrl K palette (arrow keys + Enter), `?` shortcut sheet, G-then-letter navigation, N new claim, T theme, `[` sidebar; Review: A approve, S send back, R reject, J/K lines, Esc back; Tab reaches Submit at 390 px (Playwright E2E-02) |
-| Forms | Every input has a visible `<label>` (search boxes use `aria-label`); errors use `aria-invalid` + `aria-describedby` and a text message with icon |
+| Forms | Every input has a visible `<label>` (search boxes use `aria-label`); the sign-in role picker is a `radiogroup` with arrow-key support; Caps Lock warning on password; errors use `aria-invalid` + `aria-describedby` and a text message with icon |
 | Live regions | Toast stack `role=region aria-live=polite`; totals, bulk results and refresh state announced; errors use `role="alert"` |
 | Colour not alone | Every status chip carries text ("Approved", "Needs review"); policy reasons pair an icon with words; age chips show hours/days |
 | Contrast | Token pairs chosen for WCAG 2.2 AA (≥ 4.5 : 1) in both light and dark |
@@ -189,7 +189,7 @@ Below 720 px the table turns into labelled cards (`table.responsive`).
 ## 5. Screen inventory (evidence)
 | # | Screen | File |
 |---|---|---|
-| 01 | Login with demo personas | `screenshots/01-login.png` |
+| 01 | Sign in with role picker and forgot-password link | `screenshots/01-login.png` |
 | 02 | My claims | `screenshots/02-my-claims.png` |
 | 03 | Claim editor (desktop) | `screenshots/03-claim-editor.png` |
 | 04 | Claim detail with policy checks | `screenshots/04-claim-detail-policy-flags.png` |
