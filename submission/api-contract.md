@@ -228,14 +228,14 @@ Errors (whole request): 400 `action` other than `approve`, or empty / > 200 ids 
 
 | Param | Meaning |
 |---|---|
-| `kind` | `all` (default), `auditor_step` (PENDING_APPROVAL at AUDITOR), `sample_audit` (SAMPLE_AUDIT) |
+| `kind` | `all` (default: claims the caller can act on now), `auditor_step` (PENDING_APPROVAL at AUDITOR), `head_step` (PENDING_APPROVAL at HEAD), `sample_audit` (SAMPLE_AUDIT), `all_pending` (**read-only oversight view**, added after SRE drill run 1 / DEF-06: every PENDING_APPROVAL or SAMPLE_AUDIT claim at **any** step, including MANAGER, oldest `step_entered_at` first, max 500 rows; the other filters still apply). An unrecognised value behaves like `all`. |
 | `department` | department name |
 | `category` | claim has at least one line in this category |
 | `flag` | claim flags contain this rule code |
 | `min_paise`, `max_paise` | total range, inclusive |
-| `q` | text search on title, employee name, vendor |
+| `q` | text search on claim title or employee name (case-insensitive), or exact claim id |
 
-`200` → rows in the same shape as the inbox. Errors: 400 bad `kind` or non-integer amounts · 401 · 403 not auditor/head.
+`200` → rows in the same shape as the inbox. Errors: 401 · 403 not auditor/head (employees get 403 for every `kind`, including `all_pending`) · 422 non-integer amounts.
 
 ---
 
@@ -254,13 +254,26 @@ Errors: 401.
 {"delegate_id": 15, "start_date": "2026-12-01", "end_date": "2026-12-10"}
 ```
 `201` (or `200`) → the delegation object as above.
-Errors: 400 · 401 · 403 caller is a plain employee, or CSRF · 404 delegate does not exist · 422 `DELEGATE_SELF` (delegate_id = caller), `VALIDATION_ERROR` (end before start, start in the past).
+Errors: 401 · 403 caller is not an approver, or CSRF · 422 `SELF_DELEGATION` (delegate_id = caller), `VALIDATION` (missing/invalid dates, end before start, delegate not found).
 
 ### DELETE /api/delegations/{id} — delegator
 `200 {"ok": true}`. Errors: 401 · 403 caller is the delegate, not the delegator · 404.
 
 ### GET /api/users/approvers — user
 `200 [{"id": 15, "name": "Nisha Pillai", "role": "manager", "department": "Sales"}]` (excludes the caller). Errors: 401.
+
+### GET /api/employees — head / auditor (everyone) · manager (own reporting tree)
+Employee directory with per-employee spend totals, added in PR #3 (`8bcd1ea`). Scope is set in SQL by `directory_scope`: head and auditor see all users; a manager (or any user with direct reports) sees their whole reporting tree (recursive); anyone else gets 403.
+Row fields (from `EMPLOYEE_STATS_SQL` in `main.py`): `id, name, email, role, department, department_id, manager_id, manager_name, account_masked, ifsc, direct_reports, delegation_active, claims, claimed_paise, approved_paise, paid_paise, pending_paise, pending_claims, rejected_claims, flagged_claims, last_claim_at`. Totals exclude drafts. Sorted by name. **Bank details** (`account_masked`, `ifsc`) are `null` unless the caller is head or auditor. Errors: 401 · 403 `FORBIDDEN_ROLE` (employee with no reports).
+
+### GET /api/employees/{id} — same scope as above
+`200` → `{employee, by_month, by_category, flags, by_status, recent_claims, direct_reports, manager_chain}`:
+- `employee`: one row in the list shape above (bank details hidden for managers).
+- `by_month`: approved/in-payout/paid spend per IST month, last 12 months `[{label: "YYYY-MM", value}]`.
+- `by_category`: approved spend per line category; `flags`: count per policy rule code; `by_status`: count per status (drafts excluded).
+- `recent_claims`: up to 25 latest non-draft claims (inbox row shape); `direct_reports`: `[{id, name, role, department}]`; `manager_chain`: up to 6 managers upwards.
+
+Errors: 401 · 403 caller has no directory access · 404 `NOT_FOUND` employee does not exist **or is outside the caller's reporting tree** (existence is not confirmed). Test: `test_api.py::test_employee_directory_scoping`.
 
 ---
 

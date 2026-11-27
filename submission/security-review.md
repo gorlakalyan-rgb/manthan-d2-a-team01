@@ -18,6 +18,8 @@ Claude reviewed the code against common web vulnerabilities (OWASP Top 10 style)
 | SEC-11 | Misconfiguration | Errors return `{detail, code}` without stack traces; security headers | PASS after fix | Added `X-Frame-Options: DENY`, `Referrer-Policy: same-origin` (DEF-09) |
 | SEC-12 | Integrity | A claim can be paid at most once; CSV re-export byte-identical; CSV formula-injection guard | PASS | `payout_items.claim_id UNIQUE`, `test_payout_batch_csv_and_no_double_payment` |
 
+> **SEC-04 note — demo persona picker:** `GET /api/demo-users` (no login needed) lists only the 5 synthetic `@demo.expenseflow.test` personas (head, auditor, manager, 2 employees; `main.py:105`, `seed.py:88–102`) so judges can switch roles in the local demo; picking one only fills the form, and the normal login still runs — PBKDF2 password check, signed HttpOnly SameSite=Lax session cookie, CSRF header required, and a `login` audit row (`main.py:82–91`). Accepted for the local synthetic demo alongside F3/F5; in production this endpoint and the shared demo password would be removed and login replaced by company SSO (OIDC).
+
 ## Claude's review findings and triage
 | # | Finding (from Claude's review) | Triage | Action / reason |
 |---|---|---|---|

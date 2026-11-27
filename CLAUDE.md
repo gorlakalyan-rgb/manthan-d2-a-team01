@@ -49,7 +49,7 @@ Every transition is a conditional `UPDATE ... WHERE id=%s AND status=%s AND curr
 ### Who approves a step
 - MANAGER: the claimant's `manager_id`. If null or equal to the claimant, the step is skipped and AUDITOR becomes mandatory.
 - AUDITOR: any user with role `auditor` other than the claimant.
-- HEAD: any user with role `head` other than the claimant. If the claimant is the only head, the step is skipped and the audit log records `head_step_skipped_self`.
+- HEAD: any user with role `head` other than the claimant. If the claimant is the only head, the step is skipped; the reduced chain is stored in `required_steps` and shown in the `submit_routed` audit row (no separate event).
 - **Nobody approves their own claim, including via delegation.**
 - Delegation: `delegations(delegator_id, delegate_id, start_date, end_date)`. During the window the delegate may act wherever the delegator could. Delegating to yourself is forbidden. The delegate cannot act on their own claim. The audit log stores `actor_id` plus `on_behalf_of_id`.
 
@@ -97,11 +97,13 @@ Error body: `{"detail": "human readable message", "code": "MACHINE_CODE"}`.
 | GET /api/receipts/{id} | anyone who can see a claim using it, or its uploader | — | file |
 | GET /api/approvals/inbox | manager/auditor/head/delegate | — | claims where the user can act now, oldest first, with employee name, department, flags, age_hours |
 | POST /api/approvals/bulk | auditor/head | {claim_ids, action:"approve", comment} | {results:[{claim_id, ok, status, error}]} |
-| GET /api/audit/queue | auditor/head | ?kind=all\|auditor_step\|sample_audit&department=&category=&flag=&min_paise=&max_paise=&q= | rows as inbox |
+| GET /api/audit/queue | auditor/head | ?kind=all\|auditor_step\|head_step\|sample_audit\|all_pending&department=&category=&flag=&min_paise=&max_paise=&q= | rows as inbox; `all_pending` = read-only oversight of every pending claim at any step, oldest first (SRE drill fix, DEF-06) |
 | GET /api/delegations | user | — | mine (given and received) |
 | POST /api/delegations | manager/auditor/head | {delegate_id, start_date, end_date} | delegation |
 | DELETE /api/delegations/{id} | delegator | — | {ok} |
 | GET /api/users/approvers | user | — | users who can be delegates [{id,name,role,department}] |
+| GET /api/employees | head/auditor (all), manager (reporting tree) | — | directory rows with spend totals; `account_masked`/`ifsc` null unless head/auditor; employee → 403 |
+| GET /api/employees/{id} | same scope | — | {employee, by_month, by_category, flags, by_status, recent_claims, direct_reports, manager_chain}; outside scope → 404 |
 | GET /api/payouts/eligible | head | — | APPROVED claims not in a batch |
 | POST /api/payouts | head | {claim_ids} | batch (claims → IN_PAYOUT) |
 | GET /api/payouts | head | — | batches |

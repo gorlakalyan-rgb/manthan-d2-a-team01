@@ -30,7 +30,7 @@ Replace email-and-Excel reimbursement with one system that checks every expense 
 **Thinnest end-to-end slice (first target):** employee logs in → creates a 2-line claim with a receipt → submits → policy engine flags one line → manager approves → (if > ₹25k) auditor approves → finance head adds it to a payout batch → CSV downloads → claim shows Paid.
 
 ## 4. Gaps in the brief and our decisions
-These are **proposals for the team to confirm** (see section 7).
+These began as Claude's proposals; the team adopted them and they are implemented in [CLAUDE.md](../CLAUDE.md), [low-level-design.md](low-level-design.md) and the code (traceability in [stories.csv](stories.csv), column "Business Rule / Decision Ref").
 
 | # | Gap | Proposed decision | Why |
 |---|---|---|---|
