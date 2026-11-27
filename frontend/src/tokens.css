@@ -1,0 +1,117 @@
+/* ExpenseFlow design tokens. All text/background pairs meet WCAG 2.2 AA (>= 4.5:1). */
+:root {
+  color-scheme: light dark;
+
+  /* Neutrals */
+  --color-bg: #f5f7fa;
+  --color-surface: #ffffff;
+  --color-surface-2: #eef2f7;
+  --color-border: #cfd6e0;
+  --color-border-strong: #8a96a8;
+  --color-text: #17202e;          /* 15.6:1 on white */
+  --color-text-muted: #4a5568;    /* 7.5:1 on white */
+
+  /* Brand / interactive */
+  --color-primary: #1849a9;       /* 8.0:1 on white */
+  --color-primary-hover: #123a87;
+  --color-primary-soft: #e3ebfb;
+  --color-on-primary: #ffffff;
+
+  /* Semantic (text colour on its soft background >= 4.5:1) */
+  --color-success: #146c2e;
+  --color-success-soft: #e2f4e7;
+  --color-warning: #8a4b00;
+  --color-warning-soft: #fdf0d9;
+  --color-danger: #b42318;
+  --color-danger-soft: #fde8e6;
+  --color-info: #0b5d84;
+  --color-info-soft: #e0f1fa;
+  --color-neutral: #3d4757;
+  --color-neutral-soft: #e9edf2;
+  --color-purple: #5b2c9e;
+  --color-purple-soft: #efe7fb;
+
+  /* Colorblind-safe chart palette (Okabe–Ito derived, AA against white for labels) */
+  --chart-1: #0b6fb0;
+  --chart-2: #c15c00;
+  --chart-3: #00785a;
+  --chart-4: #a6417a;
+  --chart-grid: #d9dee6;
+
+  /* Focus */
+  --focus-ring: 0 0 0 3px #ffffff, 0 0 0 6px #1849a9;
+  --focus-color: #1849a9;
+
+  /* Spacing (4px scale) */
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 24px;
+  --space-6: 32px;
+  --space-7: 48px;
+
+  /* Radius */
+  --radius-sm: 6px;
+  --radius-md: 10px;
+  --radius-lg: 14px;
+  --radius-pill: 999px;
+
+  /* Type */
+  --font-sans: system-ui, -apple-system, "Segoe UI", Roboto, "Noto Sans", "Helvetica Neue", Arial, sans-serif;
+  --font-mono: ui-monospace, "Cascadia Mono", Consolas, monospace;
+  --fs-xs: 0.75rem;
+  --fs-sm: 0.875rem;
+  --fs-md: 1rem;
+  --fs-lg: 1.125rem;
+  --fs-xl: 1.375rem;
+  --fs-2xl: 1.75rem;
+  --lh: 1.5;
+
+  /* Elevation & sizing */
+  --shadow-1: 0 1px 2px rgba(16, 24, 40, 0.06), 0 1px 3px rgba(16, 24, 40, 0.1);
+  --shadow-2: 0 4px 12px rgba(16, 24, 40, 0.12);
+  --touch: 44px;
+  --content-max: 1200px;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --color-bg: #0f141b;
+    --color-surface: #18202b;
+    --color-surface-2: #212b38;
+    --color-border: #344154;
+    --color-border-strong: #66758b;
+    --color-text: #e8edf4;
+    --color-text-muted: #aeb9c8;
+
+    --color-primary: #8fb4ff;
+    --color-primary-hover: #b3cbff;
+    --color-primary-soft: #1f2e4d;
+    --color-on-primary: #0b1322;
+
+    --color-success: #7fd69a;
+    --color-success-soft: #173323;
+    --color-warning: #ffc46b;
+    --color-warning-soft: #3a2a10;
+    --color-danger: #ff9b91;
+    --color-danger-soft: #3d1a17;
+    --color-info: #7cc8ef;
+    --color-info-soft: #13303f;
+    --color-neutral: #c4ccd8;
+    --color-neutral-soft: #2a3442;
+    --color-purple: #c9a8ff;
+    --color-purple-soft: #2e2142;
+
+    --chart-1: #56b4e9;
+    --chart-2: #e69f00;
+    --chart-3: #3cc49a;
+    --chart-4: #e78ac3;
+    --chart-grid: #2f3a49;
+
+    --focus-ring: 0 0 0 3px #0f141b, 0 0 0 6px #8fb4ff;
+    --focus-color: #8fb4ff;
+    --shadow-1: 0 1px 2px rgba(0, 0, 0, 0.4);
+    --shadow-2: 0 4px 12px rgba(0, 0, 0, 0.5);
+  }
+}
