@@ -13,5 +13,17 @@ export default defineConfig({
       '/metrics': { target: backend },
     },
   },
-  build: { outDir: 'dist', emptyOutDir: true },
+  build: {
+    outDir: 'dist',
+    emptyOutDir: true,
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          react: ['react', 'react-dom', 'react-router-dom'],
+          motion: ['motion', '@number-flow/react'],
+          icons: ['lucide-react'],
+        },
+      },
+    },
+  },
 });

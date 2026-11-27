@@ -5,6 +5,9 @@ import {
 } from '../api.js';
 import { useAsync, useDocumentTitle } from '../hooks.js';
 import { ErrorState, FieldError, Loading, StatusChip } from '../components/ui.jsx';
+import { motion } from 'motion/react';
+import { CloudUpload, FileCheck2, Plus, Trash2 } from 'lucide-react';
+import NumberFlow from '@number-flow/react';
 
 const MAX_PAISE = 100000000;
 const RECEIPT_ABOVE = 50000;
@@ -276,11 +279,12 @@ export default function ClaimEditor() {
         const isHotel = l.category === 'hotel';
         const fid = (f) => `${f}-${l.key}`;
         return (
-          <section key={l.key} className="line-card" aria-labelledby={`h-${l.key}`}>
+          <motion.section key={l.key} className="line-card" aria-labelledby={`h-${l.key}`} layout
+            initial={{ opacity: 0, y: 14, scale: 0.99 }} animate={{ opacity: 1, y: 0, scale: 1 }} transition={{ duration: 0.25, ease: [0.2, 0.8, 0.2, 1] }}>
             <div className="line-head">
               <h3 id={`h-${l.key}`}>Line {idx + 1}{Number.isFinite(p) && p > 0 ? ` · ${formatMoney(p)}` : ''}</h3>
               <button type="button" className="btn btn-sm btn-ghost" onClick={() => removeLine(l.key, idx)}
-                disabled={lines.length === 1} aria-label={`Remove line ${idx + 1}`}>Remove</button>
+                disabled={lines.length === 1} aria-label={`Remove line ${idx + 1}`}><Trash2 aria-hidden="true" /> Remove</button>
             </div>
             <div className="grid-form cols-4">
               <div className="field">
@@ -339,9 +343,14 @@ export default function ClaimEditor() {
               </div>
               <div className="field span-all">
                 <span className="label" id={`${fid('rcpt')}-label`}>Receipt</span>
-                <div className="receipt-box">
-                  {l.receipt_id && (
-                    <span className="file-pill"><span aria-hidden="true">📎</span> {l.receipt_name || 'Receipt attached'}</span>
+                <div className={`receipt-box ${l.dragging ? 'dragging' : ''}`}
+                  onDragOver={(ev) => { ev.preventDefault(); if (!l.dragging) update(l.key, { dragging: true }); }}
+                  onDragLeave={() => update(l.key, { dragging: false })}
+                  onDrop={(ev) => { ev.preventDefault(); update(l.key, { dragging: false }); onFile(l.key, ev.dataTransfer.files?.[0]); }}>
+                  {l.receipt_id ? (
+                    <motion.span className="file-pill" initial={{ scale: 0.8, opacity: 0 }} animate={{ scale: 1, opacity: 1 }}><FileCheck2 size={15} aria-hidden="true" /> {l.receipt_name || 'Receipt attached'}</motion.span>
+                  ) : (
+                    <span className="row small muted" style={{ gap: 8 }}><CloudUpload size={20} aria-hidden="true" color="var(--color-primary)" /> Drag a receipt here, or</span>
                   )}
                   <label className="btn btn-sm" htmlFor={fid('file')} style={{ cursor: l.uploading ? 'wait' : 'pointer' }}>
                     {l.uploading ? 'Uploading…' : l.receipt_id ? 'Replace receipt' : 'Upload receipt'}
@@ -365,17 +374,27 @@ export default function ClaimEditor() {
                 )}
               </div>
             </div>
-          </section>
+          </motion.section>
         );
       })}
       <datalist id="tier1-cities">{tier1.map((c) => <option key={c} value={c} />)}</datalist>
 
-      <button type="button" id="add-line" className="btn" onClick={addLine}>+ Add another line</button>
+      <button type="button" id="add-line" className="btn" onClick={addLine}><Plus aria-hidden="true" /> Add another line</button>
 
       <div className="sticky-bar">
         <div>
           <div className="total-label">Claim total</div>
-          <div className="total-value" aria-live="polite">{formatMoney(total)}</div>
+          <div className="total-value" aria-live="polite">
+            <NumberFlow value={(Number(total) || 0) / 100} locales="en-IN" format={{ style: 'currency', currency: 'INR', minimumFractionDigits: 2 }} />
+            <span className="visually-hidden">{formatMoney(total)}</span>
+          </div>
+        </div>
+        <div className="row small muted" style={{ gap: 14 }}>
+          <span><b style={{ color: 'var(--color-text)' }}>{lines.length}</b> line{lines.length === 1 ? '' : 's'}</span>
+          <span><b style={{ color: 'var(--color-text)' }}>{lines.filter((x) => x.receipt_id).length}</b> receipt{lines.filter((x) => x.receipt_id).length === 1 ? '' : 's'}</span>
+          {lines.some((x) => { const v = rupeesToPaise(x.amount); return Number.isFinite(v) && v > RECEIPT_ABOVE && !x.receipt_id; }) && (
+            <span className="chip chip-warning">Receipt missing</span>
+          )}
         </div>
         <div className="actions">
           <Link to={isNew ? '/claims' : `/claims/${id}`} className="btn btn-ghost">Cancel</Link>

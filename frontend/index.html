@@ -3,10 +3,26 @@
   <head>
     <meta charset="UTF-8" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png" />
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+    <link rel="manifest" href="/manifest.webmanifest" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
     <meta name="description" content="ExpenseFlow: expense claims with policy checks, approvals and payouts." />
-    <meta name="theme-color" content="#1849a9" />
+    <meta name="theme-color" content="#0F2E2A" />
     <title>ExpenseFlow</title>
+    <script>
+      // Apply saved theme before first paint (no flash).
+      try {
+        var s = JSON.parse(localStorage.getItem('ef.settings') || '{}');
+        var mode = s.mode || 'system';
+        var dark = mode === 'dark' || (mode === 'system' && matchMedia('(prefers-color-scheme: dark)').matches);
+        var d = document.documentElement;
+        d.dataset.theme = dark ? 'dark' : 'light';
+        d.dataset.accent = s.accent || 'forest';
+        d.dataset.density = s.density || 'comfortable';
+        if (s.motion === 'reduced') d.dataset.motion = 'reduced';
+      } catch (e) {}
+    </script>
   </head>
   <body>
     <div id="root"></div>

@@ -1,3 +1,6 @@
+import { motion } from 'motion/react';
+import NumberFlow from '@number-flow/react';
+import { BadgeCheck, FileDown, ListChecks, Wallet } from 'lucide-react';
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { asList, formatDateTime, formatMoney, get, humanize, post } from '../api.js';
@@ -6,6 +9,31 @@ import { ConfirmDialog, DataView, EmptyState, ErrorState, Notice } from '../comp
 
 function isPaid(b) {
   return String(b.status || '').toUpperCase() === 'PAID' || !!b.paid_at;
+}
+
+function PayoutSteps({ eligible, batches, selected, isPaid }) {
+  const eligTotal = eligible.reduce((a, c) => a + (Number(c.total_paise) || 0), 0);
+  const selTotal = eligible.filter((c) => selected.has(c.id)).reduce((a, c) => a + (Number(c.total_paise) || 0), 0);
+  const open = batches.filter((b) => !isPaid(b));
+  const paid = batches.filter((b) => isPaid(b));
+  const steps = [
+    [Wallet, 'Ready to pay', eligible.length, eligTotal, eligible.length > 0],
+    [ListChecks, 'Selected', selected.size, selTotal, selected.size > 0],
+    [FileDown, 'Batches to pay', open.length, open.reduce((a, b) => a + (Number(b.total_paise) || 0), 0), open.length > 0],
+    [BadgeCheck, 'Paid batches', paid.length, paid.reduce((a, b) => a + (Number(b.total_paise) || 0), 0), paid.length > 0],
+  ];
+  return (
+    <ol className="kpis" style={{ listStyle: 'none', padding: 0, gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))' }} aria-label="Payout progress">
+      {steps.map(([Icon, label, n, amt, active], i) => (
+        <motion.li key={label} className="kpi" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.06 }}
+          style={{ borderColor: active ? 'color-mix(in oklab, var(--color-primary) 35%, var(--color-border))' : undefined }}>
+          <div className="kpi-head"><span className="kpi-label">Step {i + 1} · {label}</span><span className="kpi-icon"><Icon aria-hidden="true" /></span></div>
+          <div className="kpi-value"><NumberFlow value={n} /></div>
+          <div className="kpi-foot"><span><NumberFlow value={Math.round(amt / 100)} locales="en-IN" format={{ style: 'currency', currency: 'INR', maximumFractionDigits: 0 }} /></span></div>
+        </motion.li>
+      ))}
+    </ol>
+  );
 }
 
 export default function Payouts() {
@@ -19,6 +47,7 @@ export default function Payouts() {
   const [toPay, setToPay] = useState(null);
   const [paying, setPaying] = useState(false);
   const [payError, setPayError] = useState(null);
+  const [payText, setPayText] = useState('');
 
   const rows = eligible.data || [];
   const allOn = rows.length > 0 && rows.every((r) => selected.has(r.id));
@@ -68,6 +97,7 @@ export default function Payouts() {
         </div>
       </div>
       <Notice onClose={() => setNotice('')}>{notice}</Notice>
+      <PayoutSteps eligible={eligible.data || []} batches={batches.data || []} selected={selected} isPaid={isPaid} />
 
       <section aria-labelledby="elig-h" className="card">
         <h2 id="elig-h">1. Approved claims ready to pay</h2>
@@ -137,7 +167,7 @@ export default function Payouts() {
                         <td data-label="Actions">
                           <div className="row">
                             <a className="btn btn-sm" href={`/api/payouts/${b.id}/csv`} download={`payout-batch-${b.id}.csv`}>Download CSV<span className="visually-hidden"> for batch {b.id}</span></a>
-                            {!paid && <button type="button" className="btn btn-sm btn-primary" onClick={() => { setPayError(null); setToPay(b); }}>Mark paid<span className="visually-hidden"> batch {b.id}</span></button>}
+                            {!paid && <button type="button" className="btn btn-sm btn-primary" onClick={() => { setPayError(null); setPayText(''); setToPay(b); }}>Mark paid<span className="visually-hidden"> batch {b.id}</span></button>}
                           </div>
                         </td>
                       </tr>
@@ -150,9 +180,13 @@ export default function Payouts() {
         </DataView>
       </section>
 
-      <ConfirmDialog open={!!toPay} title={`Mark batch #${toPay?.id ?? ''} as paid?`} confirmLabel="Yes, mark paid" busy={paying}
+      <ConfirmDialog open={!!toPay} title={`Mark batch #${toPay?.id ?? ''} as paid?`} confirmLabel="Yes, mark paid" busy={paying} disabled={payText.trim().toUpperCase() !== 'PAY'}
         onConfirm={markPaid} onCancel={() => setToPay(null)}>
         <p>Confirm the bank transfer of <strong>{formatMoney(toPay?.total_paise)}</strong> is complete. Every claim in this batch moves to <strong>Paid</strong>. This cannot be undone.</p>
+        <div className="field" style={{ marginTop: 12 }}>
+          <label htmlFor="pay-confirm">Type <span className="kbd">PAY</span> to confirm</label>
+          <input id="pay-confirm" className="input mono" value={payText} onChange={(e) => setPayText(e.target.value)} autoComplete="off" />
+        </div>
         {payError && <ErrorState error={payError} title="Could not mark as paid" />}
       </ConfirmDialog>
     </>
