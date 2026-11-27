@@ -1,4 +1,7 @@
 import { useEffect, useRef } from 'react';
+import { BookOpen, Inbox, Landmark, PartyPopper, ReceiptText, RefreshCw, SearchX, TriangleAlert } from 'lucide-react';
+
+const EMOJI_ICON = { '🔍': SearchX, '🧾': ReceiptText, '📘': BookOpen, '🎉': PartyPopper, '🏦': Landmark, '📭': Inbox };
 import { OUTCOME, STATUS, STEP_LABEL, ruleShort, humanize } from '../api.js';
 
 export function StatusChip({ status, step }) {
@@ -38,8 +41,12 @@ export function Flags({ flags, empty = 'None' }) {
 export function Loading({ label = 'Loading…', rows = 3 }) {
   return (
     <div role="status" aria-live="polite" className="card">
-      <span className="spinner" aria-hidden="true" /> <span>{label}</span>
-      {Array.from({ length: rows }).map((_, i) => <div key={i} className="skeleton" style={{ width: `${90 - i * 15}%` }} aria-hidden="true" />)}
+      <span className="visually-hidden">{label}</span>
+      <div className="row" aria-hidden="true" style={{ gap: 12, marginBottom: 8 }}>
+        <div className="skeleton" style={{ width: 40, height: 40, borderRadius: 12, margin: 0 }} />
+        <div style={{ flex: 1 }}><div className="skeleton" style={{ width: '40%', margin: '0 0 8px' }} /><div className="skeleton" style={{ width: '25%', margin: 0, height: 10 }} /></div>
+      </div>
+      {Array.from({ length: rows }).map((_, i) => <div key={i} className="skeleton" style={{ width: `${92 - i * 14}%`, height: 18 }} aria-hidden="true" />)}
     </div>
   );
 }
@@ -47,19 +54,20 @@ export function Loading({ label = 'Loading…', rows = 3 }) {
 export function ErrorState({ error, onRetry, title = 'Something went wrong' }) {
   return (
     <div role="alert" className="alert alert-error">
+      <TriangleAlert size={18} color="var(--color-danger)" aria-hidden="true" style={{ flex: 'none', marginTop: 2 }} />
       <div className="alert-body">
         <strong>{title}</strong>
         <p style={{ margin: '4px 0 0' }}>{error?.message || String(error)}</p>
       </div>
-      {onRetry && <button type="button" className="btn btn-sm" onClick={onRetry}>Try again</button>}
+      {onRetry && <button type="button" className="btn btn-sm" onClick={onRetry}><RefreshCw aria-hidden="true" /> Try again</button>}
     </div>
   );
 }
 
-export function EmptyState({ icon = '📭', title, children, action }) {
+export function EmptyState({ icon = <Inbox />, title, children, action }) {
   return (
     <div className="card state">
-      <span className="state-icon" aria-hidden="true">{icon}</span>
+      <span className="state-icon" aria-hidden="true">{typeof icon === 'string' && EMOJI_ICON[icon] ? (() => { const I = EMOJI_ICON[icon]; return <I />; })() : icon}</span>
       <h2>{title}</h2>
       {children && <p>{children}</p>}
       {action}
@@ -75,7 +83,7 @@ export function DataView({ state, isEmpty, empty, loadingLabel, children }) {
   return (
     <>
       {error && <ErrorState error={error} onRetry={reload} title="Could not refresh" />}
-      {loading && <p role="status" aria-live="polite" className="muted small"><span className="spinner" aria-hidden="true" /> Refreshing…</p>}
+      {loading && <p role="status" aria-live="polite" className="muted small row"><span className="spinner" aria-hidden="true" style={{ width: 14, height: 14 }} /> Refreshing…</p>}
       {isEmpty?.(data) ? empty : children(data)}
     </>
   );
@@ -97,7 +105,7 @@ export function FieldError({ id, children }) {
 }
 
 /** Accessible confirm dialog built on <dialog>. */
-export function ConfirmDialog({ open, title, children, confirmLabel = 'Confirm', tone = 'primary', busy, onConfirm, onCancel }) {
+export function ConfirmDialog({ open, title, children, confirmLabel = 'Confirm', tone = 'primary', busy, disabled, onConfirm, onCancel }) {
   const ref = useRef(null);
   useEffect(() => {
     const d = ref.current;
@@ -111,7 +119,7 @@ export function ConfirmDialog({ open, title, children, confirmLabel = 'Confirm',
       <div>{children}</div>
       <div className="row" style={{ justifyContent: 'flex-end', marginTop: 16 }}>
         <button type="button" className="btn" onClick={onCancel} disabled={busy}>Cancel</button>
-        <button type="button" className={`btn btn-${tone}`} onClick={onConfirm} disabled={busy} aria-busy={busy || undefined}>
+        <button type="button" className={`btn btn-${tone}`} onClick={onConfirm} disabled={busy || disabled} aria-busy={busy || undefined}>
           {busy ? 'Working…' : confirmLabel}
         </button>
       </div>

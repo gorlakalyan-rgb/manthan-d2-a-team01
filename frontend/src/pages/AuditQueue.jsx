@@ -1,5 +1,8 @@
 import { useMemo, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useSearchParams } from 'react-router-dom';
+import { AnimatePresence, motion } from 'motion/react';
+import { CheckCheck, X } from 'lucide-react';
+import NumberFlow from '@number-flow/react';
 import { CATEGORIES, RULE_COPY, STATUS, asList, categoryLabel, formatMoney, get, post, rupeesToPaise } from '../api.js';
 import { useAsync, useDocumentTitle } from '../hooks.js';
 import { ConfirmDialog, DataView, EmptyState, ErrorState, FieldError } from '../components/ui.jsx';
@@ -9,8 +12,10 @@ const EMPTY_FILTERS = { kind: 'all', department: '', category: '', flag: '', min
 
 export default function AuditQueue() {
   useDocumentTitle('Audit queue');
-  const [draft, setDraft] = useState(EMPTY_FILTERS);
-  const [filters, setFilters] = useState(EMPTY_FILTERS);
+  const [params] = useSearchParams();
+  const initial = { ...EMPTY_FILTERS, flag: params.get('flag') || '', department: params.get('department') || '', category: params.get('category') || '' };
+  const [draft, setDraft] = useState(initial);
+  const [filters, setFilters] = useState(initial);
   const [filterErr, setFilterErr] = useState({});
   const [selected, setSelected] = useState(() => new Set());
   const [confirming, setConfirming] = useState(false);
@@ -184,6 +189,19 @@ export default function AuditQueue() {
           <QueueTable rows={data} caption="Audit queue" selectable selected={selected} onToggle={toggle} onToggleAll={toggleAll} results={resultMap} />
         )}
       </DataView>
+      <AnimatePresence>
+        {selected.size > 0 && (
+          <motion.div className="bulk-bar" role="region" aria-label="Bulk actions"
+            initial={{ y: 80, opacity: 0, x: '-50%' }} animate={{ y: 0, opacity: 1, x: '-50%' }} exit={{ y: 80, opacity: 0, x: '-50%' }}
+            transition={{ type: 'spring', stiffness: 400, damping: 32 }}>
+            <span className="bulk-count"><NumberFlow value={selected.size} /></span>
+            <span><b>claim{selected.size === 1 ? '' : 's'} selected</b><span className="small" style={{ display: 'block', opacity: 0.75 }}>
+              <NumberFlow value={Math.round((Number(selectedTotal) || 0) / 100)} locales="en-IN" format={{ style: 'currency', currency: 'INR', maximumFractionDigits: 0 }} /> total</span></span>
+            <button type="button" className="btn btn-sm" style={{ marginLeft: 'auto', background: 'transparent', color: '#fff', borderColor: 'rgba(255,255,255,.25)' }} onClick={() => toggleAll(false)}><X aria-hidden="true" /> Clear</button>
+            <button type="button" className="btn btn-sm btn-accent" disabled={bulkBusy} onClick={() => { setBulkError(null); setConfirming(true); }}><CheckCheck aria-hidden="true" /> Approve all</button>
+          </motion.div>
+        )}
+      </AnimatePresence>
       <p className="muted small">Sample-audit claims are marked <span className="tag-sample">Sample audit</span>. Open one to clear or reject it individually, or include it in a bulk approve to clear it.</p>
 
       <ConfirmDialog open={confirming} title={`Approve ${selected.size} claim${selected.size === 1 ? '' : 's'}?`} confirmLabel="Approve all" tone="success"

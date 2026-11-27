@@ -1,6 +1,7 @@
 import { Link } from 'react-router-dom';
 import { formatAge, formatMoney } from '../api.js';
 import { Flags, StatusChip } from './ui.jsx';
+import { Avatar } from './brand.jsx';
 
 /**
  * Dense, scannable claims table for approval inbox and audit queue.
@@ -49,16 +50,16 @@ export default function QueueTable({ rows, caption, selectable, selected, onTogg
                     </label>
                   </td>
                 )}
-                <td data-label="Claim">
+                <td data-label="Claim" style={{ minWidth: 220 }}>
                   <Link to={`${linkBase}/${r.id}`} className="cell-strong">#{r.id} {r.title}</Link>
                   {isSample && <> <span className="tag-sample">Sample audit</span></>}
                 </td>
-                <td data-label="Employee">{r.employee_name || r.employee?.name || '—'}</td>
+                <td data-label="Employee"><span className="row" style={{ gap: 8, flexWrap: 'nowrap' }}><Avatar name={r.employee_name || r.employee?.name || '?'} size={26} /><span>{r.employee_name || r.employee?.name || '—'}</span></span></td>
                 <td data-label="Department">{r.department || r.department_name || '—'}</td>
                 <td data-label="Total" className="num cell-strong">{formatMoney(r.total_paise)}</td>
                 <td data-label="Flags"><Flags flags={r.flags} empty="Clean" /></td>
                 <td data-label="Status"><StatusChip status={r.status} step={r.current_step} /></td>
-                <td data-label="Age" className="num">{formatAge(r.age_hours)}</td>
+                <td data-label="Age" className="num"><span className={`chip chip-plain ${Number(r.age_hours) > 48 ? 'chip-danger' : Number(r.age_hours) > 24 ? 'chip-warning' : 'chip-neutral'}`}>{formatAge(r.age_hours)}</span></td>
                 {results && (
                   <td data-label="Result" aria-live="polite">
                     {res ? (res.ok
