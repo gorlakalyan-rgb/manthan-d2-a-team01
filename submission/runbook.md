@@ -24,6 +24,11 @@ open http://localhost:9090/alerts                  # alert states
 docker compose exec db psql -U expenseflow         # database shell
 ```
 
+**Login credentials:** they are in a separate Excel file, [ExpenseFlow-login-credentials.xlsx](ExpenseFlow-login-credentials.xlsx), in this folder and in the Drive deliverables.
+- The **Demo logins** sheet has the 5 demo accounts, with the role to pick in "Sign in as".
+- The **All users** sheet lists all 150 seeded accounts.
+- The password is `demo123` for every account. If a demo login stops working, someone has used "Forgot password". Reset the data with `docker compose down --volumes && docker compose up -d --build --wait`; this also returns the approval-age baseline to green.
+
 ## 3. Alerts
 
 ### Alert: OldestPendingApprovalWarning

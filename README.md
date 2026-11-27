@@ -24,6 +24,13 @@ The first start builds the images and seeds **150 employees, 8 departments, a re
 | Finance auditor | auditor@demo.expenseflow.test |
 | Finance head (admin) | head@demo.expenseflow.test |
 
+**All login credentials are in a separate Excel file: [submission/ExpenseFlow-login-credentials.xlsx](submission/ExpenseFlow-login-credentials.xlsx).** It has three sheets:
+- **Demo logins:** the 5 demo accounts, with the role to pick in "Sign in as" and what each role can do.
+- **All users:** all 150 seeded accounts, with role, department and manager.
+- **Summary:** account counts by role.
+
+All accounts are synthetic, and every password is `demo123` unless someone uses "Forgot password".
+
 ## Tests
 ```bash
 # backend: 23 policy unit tests + 21 API tests on real PostgreSQL 18
@@ -45,6 +52,7 @@ React 19 + Vite 7 → FastAPI (Python 3.13, same origin on :8080) → PostgreSQL
 ## Submission index
 | Item | File |
 |---|---|
+| Login credentials (Excel, all demo accounts) | [submission/ExpenseFlow-login-credentials.xlsx](submission/ExpenseFlow-login-credentials.xlsx) |
 | Ideation (gaps → decisions D1–D15) | [submission/ideation.md](submission/ideation.md) |
 | Stories (Excel) | [submission/stories.xlsx](submission/stories.xlsx) |
 | LLD, diagrams, bypass review | [submission/low-level-design.md](submission/low-level-design.md) |
