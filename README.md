@@ -57,6 +57,9 @@ React 19 + Vite 7 → FastAPI (Python 3.13, same origin on :8080) → PostgreSQL
 | Runbook + incident RCA | [runbook](submission/runbook.md), [RCA](submission/incident-rca.md), [drill output](submission/drill-output.txt) |
 | Claude usage journal | [submission/claude-usage-journal.md](submission/claude-usage-journal.md) |
 | CLAUDE.md + reusable asset (Claude skill) | [CLAUDE.md](CLAUDE.md), [.claude/skills/approval-workflow-app/SKILL.md](.claude/skills/approval-workflow-app/SKILL.md) |
+| 5-minute demo script | [submission/demo-script.md](submission/demo-script.md) |
+| Presentation (10 slides) | [submission/presentation.pptx](submission/presentation.pptx) |
+| Load test (Locust) | [ops/locustfile.py](ops/locustfile.py), [locust-stats.csv](submission/locust-stats.csv) |
 
 ## Notes
 - All data is synthetic. Do not use real names, bank details or receipts.

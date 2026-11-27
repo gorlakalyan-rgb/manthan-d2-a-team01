@@ -1,13 +1,13 @@
 # ExpenseFlow — Test Results (27 Nov 2026)
 
-All results below are from real runs. Unless stated otherwise they ran on a team laptop against PostgreSQL 18.7 in Docker. The 27 Nov evening re-run (after PR #3 added a test) and the Locust load test ran in a cloud sandbox where the PostgreSQL 18 image could not be downloaded, so they used PostgreSQL 16.15; this is labelled on each row. Raw evidence is in `submission/test-evidence/`.
+All results below are from real runs. Unless stated otherwise they ran on a team laptop against PostgreSQL 18.7 in Docker. The latest backend run (46 / 46, after PR #5 and #6) is on the PostgreSQL 18.7 Docker Compose stack. Two earlier runs were made in a cloud sandbox where the PostgreSQL 18 image could not be downloaded, so they used PostgreSQL 16.15: the 45-test re-run after PR #3 and the Locust load test; both are labelled on their rows. Raw evidence is in `submission/test-evidence/`.
 
 ## Summary
 | Suite | Tool | Result | Evidence |
 |---|---|---|---|
 | Policy engine unit tests (every rule + boundaries) | pytest | **23 / 23 passed** | `backend/tests/test_policy.py` |
 | API / workflow integration (thresholds, delegation, self-approval, concurrency, payouts, audit, policy config, uploads, oversight queue, employee directory, sign-in role, password reset) | pytest on PostgreSQL 18 | **23 / 23 passed** | `backend/tests/test_api.py`, `test-evidence/pytest-junit.xml` |
-| **Total backend — latest** | pytest on PostgreSQL 18 | **46 passed, 0 failed** (incl. employee directory scoping, sign-in role check and password reset) | `test-evidence/pytest-summary.txt` |
+| **Total backend — latest** (main `7c31aa7`) | pytest on PostgreSQL 18.7 (Docker Compose) | **46 passed, 0 failed** = 23 policy + 23 API (incl. employee directory scoping, sign-in role check and password reset) | `test-evidence/pytest-summary.txt`, `test-evidence/pytest-junit.xml` |
 | Total backend — earlier run (commit `ce25df1`, before sign-in/password-reset tests) | pytest on PostgreSQL 16.15 (sandbox) | 45 passed, 0 failed | `test-evidence/pytest-summary-pg16-sandbox.txt`, `test-evidence/pytest-junit-pg16-sandbox.xml` |
 | UI end-to-end (Playwright 1.60; Edge locally, Chromium via `PW_EXECUTABLE` in CI) | Playwright | **5 / 5 passed** (re-run after evidence fixes, reduced motion, 1440 × 900) | `frontend/e2e/expenseflow.spec.js`, `test-evidence/playwright-junit.xml`, `screenshots/` (all 11 regenerated and inspected) |
 | 10 written E2E cases (test plan §E2E) | `ops/e2e_cases.py` against live stack | **10 / 10 passed** | `test-evidence/e2e-cases-results.csv` |
@@ -86,7 +86,7 @@ Two separate measurements. They are not interchangeable: the automated one has n
 | Approve click → "Approved." confirmation | 140 ms |
 | **Total (excluding the evidence screenshot)** | **597 ms** |
 
-**B. Manual stopwatch (live, human)** — to be filled in from a real run by a team member.
+**B. Manual stopwatch (live, human)** — **pending**: to be filled in with real seconds from a live click-through by a team member. Do not estimate.
 
 | Run | Tester | Claim | Inbox → receipt inspected | → Approved | Total | Notes |
 |---|---|---|---|---|---|---|
