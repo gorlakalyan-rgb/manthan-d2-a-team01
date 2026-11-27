@@ -13,3 +13,5 @@ test-results/
 *.log
 uploads/
 backend/uploads/
+frontend/test-results/
+frontend/playwright-report/

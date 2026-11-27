@@ -1,0 +1,64 @@
+name: expenseflow
+services:
+  db:
+    image: postgres:18.7
+    environment:
+      POSTGRES_USER: expenseflow
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-expenseflow}
+      POSTGRES_DB: expenseflow
+    volumes: [dbdata:/var/lib/postgresql]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U expenseflow -d expenseflow"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+  app:
+    build: .
+    environment:
+      DATABASE_URL: postgresql://expenseflow:${POSTGRES_PASSWORD:-expenseflow}@db:5432/expenseflow
+      SESSION_SECRET: ${SESSION_SECRET:-dev-only-change-me}
+    ports: ["8080:8080"]
+    volumes: [uploads:/data/uploads]
+    depends_on:
+      db: {condition: service_healthy}
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request,sys; sys.exit(0 if urllib.request.urlopen('http://127.0.0.1:8080/healthz').status==200 else 1)"]
+      interval: 10s
+      timeout: 3s
+      retries: 18
+      start_period: 20s
+
+  prometheus:
+    image: prom/prometheus:v3.5.0
+    command: ["--config.file=/etc/prometheus/prometheus.yml", "--web.enable-lifecycle"]
+    volumes:
+      - ./ops/prometheus:/etc/prometheus:ro
+    ports: ["9090:9090"]
+    depends_on:
+      app: {condition: service_healthy}
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://127.0.0.1:9090/-/ready"]
+      interval: 5s
+      retries: 20
+
+  grafana:
+    image: grafana/grafana:12.1.1
+    environment:
+      GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_ADMIN_PASSWORD:-admin}
+      GF_AUTH_ANONYMOUS_ENABLED: "true"
+      GF_AUTH_ANONYMOUS_ORG_ROLE: Viewer
+    volumes:
+      - ./ops/grafana/provisioning:/etc/grafana/provisioning:ro
+      - ./ops/grafana/dashboards:/var/lib/grafana/dashboards:ro
+    ports: ["3000:3000"]
+    depends_on:
+      prometheus: {condition: service_healthy}
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://127.0.0.1:3000/api/health"]
+      interval: 5s
+      retries: 30
+
+volumes:
+  dbdata:
+  uploads:

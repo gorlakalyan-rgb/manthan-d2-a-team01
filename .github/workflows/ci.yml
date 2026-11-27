@@ -1,0 +1,63 @@
+name: CI
+on:
+  push:
+  pull_request:
+
+jobs:
+  backend:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:18.7
+        env: {POSTGRES_USER: expenseflow, POSTGRES_PASSWORD: expenseflow, POSTGRES_DB: expenseflow}
+        ports: ["5433:5432"]
+        options: >-
+          --health-cmd "pg_isready -U expenseflow" --health-interval 5s --health-timeout 3s --health-retries 20
+    defaults: {run: {working-directory: backend}}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: {python-version: "3.13"}
+      - run: pip install -r requirements.txt pip-audit
+      - name: Tests (unit + API on PostgreSQL 18)
+        run: python -m pytest -q
+        env: {UPLOAD_DIR: /tmp/uploads}
+      - name: Dependency check (pip-audit)
+        run: pip-audit -r requirements.txt
+
+  frontend:
+    runs-on: ubuntu-latest
+    defaults: {run: {working-directory: frontend}}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: {node-version: "26.13.1"}
+      - run: npm ci
+      - run: npm run build
+      - name: Dependency check (npm audit, high+)
+        run: npm audit --audit-level=high --omit=dev
+
+  secrets-scan:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with: {fetch-depth: 0}
+      - name: gitleaks (no secrets committed)
+        uses: gitleaks/gitleaks-action@v2
+        env: {GITHUB_TOKEN: "${{ secrets.GITHUB_TOKEN }}"}
+
+  compose:
+    runs-on: ubuntu-latest
+    needs: [backend, frontend]
+    steps:
+      - uses: actions/checkout@v4
+      - run: docker compose config --quiet
+      - name: One-command start (build images + seeded stack)
+        run: docker compose up -d --build --wait --wait-timeout 300
+      - name: Smoke test
+        run: |
+          curl -fsS http://localhost:8080/healthz
+          docker compose exec -T db psql -U expenseflow -c "select version();" | grep "PostgreSQL 18"
+          docker compose exec -T db psql -U expenseflow -tAc "select count(*) from claims" | grep -E '^[0-9]{4}$'
+      - if: always()
+        run: docker compose down --volumes

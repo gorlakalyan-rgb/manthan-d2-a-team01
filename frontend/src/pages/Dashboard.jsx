@@ -63,7 +63,7 @@ export default function Dashboard() {
           const byMonth = series(d.by_month, ['month', 'period', 'label']).map((x) => ({ ...x, short: monthShort(x.label) }));
           const byRule = series(d.violations_by_rule, ['rule', 'code', 'rule_code', 'label'], ruleShort, ['count', 'value', 'violations']).sort((a, b) => b.value - a.value);
           const tiles = [
-            ['Total spend', formatMoney(k.total_spend_paise)],
+            ['Total spend', formatMoneyShort(k.total_spend_paise)],
             ['Claims', Number(k.claims ?? 0).toLocaleString('en-IN')],
             ['Pending approval', Number(k.pending ?? 0).toLocaleString('en-IN')],
             ['Avg approval time', hours(k.avg_approval_hours)],

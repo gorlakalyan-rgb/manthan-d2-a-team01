@@ -17,7 +17,7 @@ export default function BarChart({ title, data, format = String, color = 'var(--
 
   let svg;
   if (orientation === 'vertical') {
-    const W = 560; const H = 240; const top = 24; const bottom = 36; const left = 8; const right = 8;
+    const W = 620; const H = 240; const top = 24; const bottom = 36; const left = 8; const right = 8;
     const slot = (W - left - right) / Math.max(1, data.length);
     const bw = Math.min(56, slot * 0.6);
     const ph = H - top - bottom;
@@ -43,7 +43,7 @@ export default function BarChart({ title, data, format = String, color = 'var(--
       </svg>
     );
   } else {
-    const rowH = 34; const labelW = 130; const valueW = 96; const W = 560;
+    const rowH = 34; const labelW = 190; const valueW = 96; const W = 620;
     const H = Math.max(rowH, data.length * rowH) + 8;
     const plotW = W - labelW - valueW;
     svg = (
@@ -59,7 +59,7 @@ export default function BarChart({ title, data, format = String, color = 'var(--
             <g key={d.label}>
               <title>{`${d.label}: ${format(d.value)}`}</title>
               <rect x={0} y={y} width={W} height={rowH - 2} fill="transparent" />
-              <text x={labelW - 8} y={y + bh / 2 + 5} textAnchor="end" fontSize="13">{truncate(d.label, 17)}</text>
+              <text x={labelW - 8} y={y + bh / 2 + 5} textAnchor="end" fontSize="13">{truncate(d.label, 26)}</text>
               <path d={roundedRight(labelW, y + 2, w, bh, Math.min(4, w))} fill={color} />
               <text x={labelW + w + 6} y={y + bh / 2 + 5} fontSize="13" fontWeight="600">{format(d.value)}</text>
             </g>
