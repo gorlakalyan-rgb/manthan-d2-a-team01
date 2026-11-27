@@ -8,7 +8,7 @@ All results below are from real runs on this laptop against PostgreSQL 18.7 in D
 | Policy engine unit tests (every rule + boundaries) | pytest | **23 / 23 passed** | `backend/tests/test_policy.py` |
 | API / workflow integration (thresholds, delegation, self-approval, concurrency, payouts, audit, policy config, uploads) | pytest on PostgreSQL 18 | **21 / 21 passed** | `backend/tests/test_api.py`, `test-evidence/pytest-junit.xml` |
 | **Total backend** | pytest | **44 passed, 0 failed** | `test-evidence/pytest-summary.txt` |
-| UI end-to-end (Edge, Playwright 1.60) | Playwright | **5 / 5 passed** | `frontend/e2e/expenseflow.spec.js`, `test-evidence/playwright-junit.xml`, `screenshots/` |
+| UI end-to-end (Playwright 1.60; Edge locally, Chromium via `PW_EXECUTABLE` in CI) | Playwright | **5 / 5 passed** (re-run after evidence fixes, reduced motion, 1440 × 900) | `frontend/e2e/expenseflow.spec.js`, `test-evidence/playwright-junit.xml`, `screenshots/` (all 11 regenerated and inspected) |
 | 10 written E2E cases (test plan §E2E) | `ops/e2e_cases.py` against live stack | **10 / 10 passed** | `test-evidence/e2e-cases-results.csv` |
 | SRE incident drill | `ops/drill.py` | **Alert fired in 60–66 s, resolved in 5 s** | `drill-output.txt`, `incident-rca.md` |
 | Security checklist | pip-audit, npm audit, review | **12 / 12 pass** (after 3 fixes) | `security-review.md` |
@@ -54,6 +54,29 @@ All results below are from real runs on this laptop against PostgreSQL 18.7 in D
 | UI-11 | Status chips and flags have text, not colour only | PASS | screenshots 04, 06 |
 | UI-12 | Buttons match `allowed_actions` | PASS | E2E-07 (no approve on own claim), Playwright E2E-05 (role guard + API 403) |
 | UI-02, 05, 06, 08, 09, 10 | Upload on phone camera, keyboard bulk-select, slow network, 409 message, field-level 422, session expiry | Not executed (time) | Manual follow-up; UI-09 is a known limitation (DEF-12) |
+
+## Approver flow timing (inbox → inspect receipt → approve)
+Two separate measurements. They are not interchangeable: the automated one has no human reading time.
+
+**A. Playwright-timed (automated)** — recorded by E2E-01 on 2026-11-27 (chromium), raw data in
+[`test-evidence/approver-flow-timing.json`](test-evidence/approver-flow-timing.json).
+
+| Step | Time |
+|---|---|
+| Open claim from inbox → review screen ready | 369 ms |
+| Receipt rendered beside the lines | 131 ms |
+| Approve click → "Approved." confirmation | 159 ms |
+| **Total (excluding the evidence screenshot)** | **659 ms** |
+
+**B. Manual stopwatch (live, human)** — to be filled in from a real run by a team member.
+
+| Run | Tester | Claim | Inbox → receipt inspected | → Approved | Total | Notes |
+|---|---|---|---|---|---|---|
+| 1 | _(name)_ | _(#id)_ | _( s)_ | _( s)_ | _( s)_ | |
+| 2 | _(name)_ | _(#id)_ | _( s)_ | _( s)_ | _( s)_ | |
+
+How to run B: sign in as `manager@demo.expenseflow.test`, open **Approvals**, start the stopwatch, click the
+oldest claim, read the receipt on the right, press **A** (or click Approve), stop when "Approved." appears.
 
 ## Defects
 12 logged in `defect-log.csv` — 10 fixed, 1 monitoring (cold-start flake), 1 open/accepted (field-level 422 mapping).

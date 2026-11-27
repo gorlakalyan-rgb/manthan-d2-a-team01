@@ -60,7 +60,7 @@ export default function App() {
     return (
       <div className="login-wrap" role="status" aria-live="polite">
         <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} style={{ display: 'grid', justifyItems: 'center', gap: 16 }}>
-          <motion.div animate={{ y: [0, -6, 0] }} transition={{ duration: 1.6, repeat: Infinity, ease: 'easeInOut' }}><AppIcon size={72} glow /></motion.div>
+          <motion.div animate={window.matchMedia?.('(prefers-reduced-motion: reduce)').matches ? { y: 0 } : { y: [0, -6, 0] }} transition={{ duration: 1.6, repeat: Infinity, ease: 'easeInOut' }}><AppIcon size={72} glow /></motion.div>
           <span className="muted small">Checking your session…</span>
         </motion.div>
       </div>

@@ -802,3 +802,7 @@ th.num .th-sort { margin-left: auto; }
 .emp-head { position: relative; z-index: 1; }
 .emp-sheet .stat b { font-size: 1.02rem; }
 .emp-sheet .stat-grid { grid-template-columns: repeat(auto-fit, minmax(118px, 1fr)); }
+
+/* Dense tables: tighter horizontal padding so the full queue (incl. Age) fits a 1440px desktop */
+table.data th, table.data td { padding-left: 12px; padding-right: 12px; }
+table.data td .chip-plain { white-space: nowrap; }

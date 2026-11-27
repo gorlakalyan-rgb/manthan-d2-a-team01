@@ -50,7 +50,7 @@ export default function QueueTable({ rows, caption, selectable, selected, onTogg
                     </label>
                   </td>
                 )}
-                <td data-label="Claim" style={{ minWidth: 220 }}>
+                <td data-label="Claim" style={{ minWidth: 190 }}>
                   <Link to={`${linkBase}/${r.id}`} className="cell-strong">#{r.id} {r.title}</Link>
                   {isSample && <> <span className="tag-sample">Sample audit</span></>}
                 </td>
