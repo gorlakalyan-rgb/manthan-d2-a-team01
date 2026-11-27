@@ -10,6 +10,7 @@ import { roleCaps, useAuth } from '../auth.jsx';
 import { asList, formatAge, formatMoney, get, humanize } from '../api.js';
 import { ACCENTS, useSettings } from '../settings.jsx';
 import { AppIcon, Avatar, Wordmark } from './brand.jsx';
+import LiveClock, { useNow } from './LiveClock.jsx';
 
 /* ------------------------------------------------------------------ navigation model */
 export function navFor(user) {
@@ -297,6 +298,12 @@ function UserMenu({ user }) {
   );
 }
 
+function SidebarClock() {
+  const now = useNow();
+  const t = new Intl.DateTimeFormat('en-IN', { timeZone: 'Asia/Kolkata', hour: '2-digit', minute: '2-digit', hour12: true }).format(now).toUpperCase();
+  return <div style={{ marginTop: 4 }}>Policy engine · {t} IST</div>;
+}
+
 function LogoutButton() {
   const { logout } = useAuth();
   const navigate = useNavigate();
@@ -401,7 +408,7 @@ export default function Shell({ children }) {
         <div className="sb-card sb-hide">
           <div className="sb-health"><span className={`dot ${health.api !== 'ok' || !health.online ? 'down' : ''}`} />
             <strong style={{ margin: 0 }}>{!health.online ? 'You are offline' : health.api === 'ok' ? 'All systems normal' : 'Service degraded'}</strong></div>
-          <div style={{ marginTop: 4 }}>Policy engine · IST {new Intl.DateTimeFormat('en-IN', { timeZone: 'Asia/Kolkata', hour: '2-digit', minute: '2-digit' }).format(new Date())}</div>
+          <SidebarClock />
         </div>
         <button type="button" className="sb-collapse" onClick={() => set({ collapsed: !settings.collapsed })} aria-label={settings.collapsed ? 'Expand sidebar' : 'Collapse sidebar'}>
           {settings.collapsed ? <ChevronsRight size={18} /> : <ChevronsLeft size={18} />}<span className="sb-hide">Collapse</span>
@@ -416,6 +423,7 @@ export default function Shell({ children }) {
             <strong>{title}</strong>
             {sub && <><span>/</span><span>{sub === 'new' ? 'New' : sub === 'edit' ? 'Edit' : `#${sub}`}</span></>}
           </div>
+          <LiveClock />
           <button type="button" className="search-trigger" onClick={() => setPalette(true)} aria-label="Search and commands (Ctrl K)">
             <Search aria-hidden="true" /><span className="label">Search or jump to…</span><span className="kbd">Ctrl K</span>
           </button>

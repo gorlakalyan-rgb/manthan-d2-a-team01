@@ -182,7 +182,7 @@ Below 720 px the table turns into labelled cards (`table.responsive`).
 | Charts | Every chart card has a **Chart / Table** toggle with a real `<table>`; SVGs have `role="img"` and an `aria-label` listing the values |
 | Reduced motion | `MotionConfig reducedMotion="user"`, CSS `prefers-reduced-motion` and the in-app **Reduce motion** switch turn animations off (decorative loops included) |
 | Touch targets | Controls ≥ 40 px (44 px on coarse pointers) |
-| Language and formats | `lang="en-IN"`, ₹ with lakh grouping, all times in IST |
+| Language and formats | `lang="en-IN"`, ₹ with lakh grouping, all times in IST; live 12-hour IST clock and date in the top bar (`<time>` with an `aria-label`, deliberately not `aria-live` so screen readers are not interrupted every second) |
 
 ---
 

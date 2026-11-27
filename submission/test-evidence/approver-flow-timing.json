@@ -1,11 +1,11 @@
 {
   "label": "Playwright-timed approver flow (automated; excludes human reading and decision time)",
-  "run_at": "2026-11-27T12:32:51.500Z",
+  "run_at": "2026-11-27T12:40:57.846Z",
   "browser": "chromium",
   "steps_ms": {
-    "open_claim_from_inbox": 391,
-    "receipt_rendered_side_by_side": 97,
-    "approve_click_to_confirmation": 109
+    "open_claim_from_inbox": 373,
+    "receipt_rendered_side_by_side": 84,
+    "approve_click_to_confirmation": 140
   },
   "total_ms_excluding_screenshot": 597
 }

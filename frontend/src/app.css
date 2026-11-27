@@ -844,3 +844,37 @@ table.data td .chip-plain { white-space: nowrap; }
 .pw-rules li svg { width: 14px; height: 14px; color: var(--color-text-faint); }
 .pw-rules li.ok { color: var(--color-success); }
 .pw-rules li.ok svg { color: var(--color-success); }
+
+/* Live clock (top bar) */
+.live-clock {
+  margin-left: auto; display: flex; flex-direction: column; align-items: flex-end; justify-content: center; line-height: 1.1;
+  padding: 4px 12px; border-radius: 12px; border: 1px solid var(--color-border); background: var(--color-surface); box-shadow: var(--shadow-1), var(--inner-hi);
+  white-space: nowrap; min-width: 150px;
+}
+.live-clock + .search-trigger { margin-left: 0; }
+.lc-time { display: flex; align-items: baseline; gap: 1px; font-variant-numeric: tabular-nums; }
+.lc-hm { font-family: var(--font-display); font-weight: 600; font-size: 1.12rem; letter-spacing: -0.01em; color: var(--color-text); }
+.lc-s { font-family: var(--font-display); font-weight: 500; font-size: 0.85rem; color: var(--color-text-muted); }
+.lc-ap { margin-left: 5px; font-size: 0.62rem; font-weight: 800; letter-spacing: 0.08em; padding: 1px 5px; border-radius: 5px; background: color-mix(in oklab, var(--accent) 22%, var(--color-surface)); color: color-mix(in oklab, var(--accent) 50%, black); }
+[data-theme="dark"] .lc-ap { color: var(--accent); }
+.lc-date { display: inline-flex; align-items: center; gap: 4px; font-size: 0.68rem; font-weight: 600; color: var(--color-text-muted); margin-top: 2px; }
+@media (max-width: 1180px) { .live-clock .lc-date { display: none; } .live-clock { min-width: 0; } }
+@media (max-width: 899px) { .live-clock { padding: 4px 8px; } .lc-s { display: none; } }
+@media (max-width: 420px) {
+  .live-clock { padding: 3px 7px; }
+  .lc-hm { font-size: 0.95rem; }
+  .lc-ap { margin-left: 3px; }
+  .topbar .icon-btn[title^="Toggle theme"] { display: none; }   /* theme stays in the profile menu */
+}
+
+.topbar .crumbs { flex: 1 1 auto; overflow: hidden; }
+.topbar .crumbs > * { flex: none; }
+.topbar .crumbs strong { flex: 0 1 auto; min-width: 0; }
+.live-clock { flex: none; }
+.user-chip .meta b, .user-chip .meta span { white-space: nowrap; }
+@media (min-width: 900px) and (max-width: 1280px) {
+  .search-trigger { min-width: 200px; }
+  .topbar .crumbs .crumb-root { display: none; }
+}
+.search-trigger .label { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.kbd { white-space: nowrap; }

@@ -63,9 +63,9 @@ Two separate measurements. They are not interchangeable: the automated one has n
 
 | Step | Time |
 |---|---|
-| Open claim from inbox → review screen ready | 391 ms |
-| Receipt rendered beside the lines | 97 ms |
-| Approve click → "Approved." confirmation | 109 ms |
+| Open claim from inbox → review screen ready | 373 ms |
+| Receipt rendered beside the lines | 84 ms |
+| Approve click → "Approved." confirmation | 140 ms |
 | **Total (excluding the evidence screenshot)** | **597 ms** |
 
 **B. Manual stopwatch (live, human)** — to be filled in from a real run by a team member.
