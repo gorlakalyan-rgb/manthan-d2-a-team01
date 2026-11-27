@@ -763,3 +763,42 @@ dialog h2 { font-family: var(--font-display); font-size: 1.4rem; font-weight: 60
   .sticky-bar .total-label { font-size: 0.62rem; }
   .sticky-bar .total-value { font-size: 1.1rem; }
 }
+
+/* Employee directory */
+.th-sort { display: inline-flex; align-items: center; gap: 4px; background: none; border: 0; padding: 0; font: inherit; color: inherit; text-transform: inherit; letter-spacing: inherit; cursor: pointer; }
+.th-sort:hover { color: var(--color-text); }
+th.num .th-sort { margin-left: auto; }
+.emp-table tbody tr:focus-visible { outline: 2px solid var(--color-primary); outline-offset: -2px; }
+.emp-cards { display: grid; gap: var(--space-4); grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); }
+.emp-card { margin: 0; text-align: left; font: inherit; color: inherit; cursor: pointer; display: block; width: 100%; }
+.emp-card-stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; padding-top: 12px; border-top: 1px dashed var(--color-border); }
+.emp-card-stats span { display: flex; flex-direction: column; font-size: 0.7rem; color: var(--color-text-muted); text-transform: uppercase; letter-spacing: 0.06em; font-weight: 700; }
+.emp-card-stats b { font-family: var(--font-display); font-size: 1.1rem; color: var(--color-text); text-transform: none; letter-spacing: -0.01em; font-weight: 600; }
+.emp-sheet { width: min(560px, calc(100vw - 20px)); }
+.emp-sheet .sheet-body { padding: 0; }
+.emp-cover { position: relative; height: 96px; flex: none; margin: 0 -20px; border-radius: 22px 22px 0 0; background: var(--grain), radial-gradient(80% 140% at 90% 0%, color-mix(in oklab, var(--accent) 45%, transparent), transparent 60%), linear-gradient(130deg, var(--brand-2), var(--brand)); }
+.emp-cover .icon-btn:hover { background: rgba(255, 255, 255, 0.15); border-color: transparent; color: #fff; }
+.emp-head { display: flex; gap: 16px; align-items: flex-start; margin-top: -44px; }
+.emp-chain { display: flex; flex-wrap: wrap; align-items: center; gap: 4px; padding: 10px; border-radius: 14px; background: var(--color-surface-2); }
+.emp-chain-node { display: inline-flex; align-items: center; gap: 6px; padding: 4px 10px 4px 4px; border-radius: 999px; border: 1px solid var(--color-border); background: var(--color-surface); font: inherit; font-size: 0.78rem; font-weight: 600; color: var(--color-text); cursor: pointer; }
+.emp-chain-node + .emp-chain-node::before { content: "›"; margin: 0 6px 0 -2px; color: var(--color-text-faint); }
+.emp-chain-node.current { border-color: var(--color-primary); background: var(--color-primary-soft); cursor: default; }
+.emp-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
+.emp-row { display: flex; width: 100%; align-items: center; justify-content: space-between; gap: 12px; padding: 10px 12px; border-radius: 12px; background: var(--color-surface-2); border: 1px solid transparent; text-decoration: none; color: inherit; font: inherit; cursor: pointer; text-align: left; }
+.emp-row:hover { border-color: var(--color-border-strong); background: var(--color-surface); color: inherit; }
+.org-grid { display: grid; gap: 12px; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); }
+.org-team { border: 1px solid var(--color-border); border-radius: 16px; padding: 12px; background: var(--color-surface-2); }
+.org-lead { display: flex; align-items: center; gap: 10px; width: 100%; padding: 8px; border-radius: 12px; border: 0; background: var(--color-surface); box-shadow: var(--shadow-1); font: inherit; color: inherit; cursor: pointer; text-align: left; }
+.org-members { display: grid; gap: 4px; margin: 8px 0 0 18px; padding-left: 14px; border-left: 2px solid var(--color-border-strong); }
+.org-member { position: relative; display: flex; align-items: center; gap: 8px; padding: 5px 8px; border-radius: 10px; border: 0; background: none; font: inherit; font-size: 0.8rem; color: inherit; cursor: pointer; text-align: left; }
+.org-member::before { content: ""; position: absolute; left: -14px; top: 50%; width: 12px; height: 2px; background: var(--color-border-strong); }
+.org-member:hover { background: var(--color-surface); }
+.org-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--color-warning); margin-left: auto; }
+.org-dot.hi { background: var(--color-danger); }
+@media (max-width: 899px) { .emp-view-label { display: none; } }
+
+.emp-close { position: absolute; top: 12px; right: 12px; z-index: 3; color: #fff; }
+.emp-close:hover { background: rgba(255, 255, 255, 0.15) !important; border-color: transparent !important; color: #fff !important; }
+.emp-head { position: relative; z-index: 1; }
+.emp-sheet .stat b { font-size: 1.02rem; }
+.emp-sheet .stat-grid { grid-template-columns: repeat(auto-fit, minmax(118px, 1fr)); }
