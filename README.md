@@ -52,6 +52,7 @@ React 19 + Vite 7 → FastAPI (Python 3.13, same origin on :8080) → PostgreSQL
 | API contract | [submission/api-contract.md](submission/api-contract.md) |
 | Test plan / results / defect log | [test-plan](submission/test-plan.md), [test-results](submission/test-results.md), [defect-log.csv](submission/defect-log.csv), [test-evidence/](submission/test-evidence) |
 | Security checklist run | [submission/security-review.md](submission/security-review.md) |
+| UI design: wireframes, design tokens, table states, accessibility | [submission/ui-design.md](submission/ui-design.md) |
 | UI designs (screenshots) | [submission/screenshots/](submission/screenshots) |
 | Runbook + incident RCA | [runbook](submission/runbook.md), [RCA](submission/incident-rca.md), [drill output](submission/drill-output.txt) |
 | Claude usage journal | [submission/claude-usage-journal.md](submission/claude-usage-journal.md) |

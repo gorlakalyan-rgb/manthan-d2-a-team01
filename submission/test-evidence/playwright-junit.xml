@@ -1,14 +1,14 @@
-<testsuites id="" name="" tests="5" failures="0" skipped="0" errors="0" time="29.174831">
-<testsuite name="expenseflow.spec.js" timestamp="2026-11-27T11:40:55.348Z" hostname="" tests="5" failures="0" skipped="0" time="24.059" errors="0">
-<testcase name="E2E-01 employee submits over-limit cab claim, manager approves it" classname="expenseflow.spec.js" time="8.779">
+<testsuites id="" name="" tests="5" failures="0" skipped="0" errors="0" time="20.951133">
+<testsuite name="expenseflow.spec.js" timestamp="2026-11-27T12:16:51.397Z" hostname="" tests="5" failures="0" skipped="0" time="20.057" errors="0">
+<testcase name="E2E-01 employee submits over-limit cab claim, manager approves it" classname="expenseflow.spec.js" time="9.586">
 </testcase>
-<testcase name="E2E-02 phone width 390px: claim capture has no horizontal scroll and is keyboard reachable" classname="expenseflow.spec.js" time="3.805">
+<testcase name="E2E-02 phone width 390px: claim capture has no horizontal scroll and is keyboard reachable" classname="expenseflow.spec.js" time="1.646">
 </testcase>
-<testcase name="E2E-03 auditor queue filters and dashboard charts render" classname="expenseflow.spec.js" time="5.07">
+<testcase name="E2E-03 auditor queue filters and dashboard charts render" classname="expenseflow.spec.js" time="4.582">
 </testcase>
-<testcase name="E2E-04 head sees payouts and policy configuration" classname="expenseflow.spec.js" time="4.145">
+<testcase name="E2E-04 head sees payouts and policy configuration" classname="expenseflow.spec.js" time="3.105">
 </testcase>
-<testcase name="E2E-05 employee cannot open finance pages" classname="expenseflow.spec.js" time="2.26">
+<testcase name="E2E-05 employee cannot open finance pages" classname="expenseflow.spec.js" time="1.138">
 </testcase>
 </testsuite>
 </testsuites>

@@ -1,5 +1,5 @@
 import { useId, useRef } from 'react';
-import { motion, useMotionValue, useSpring, useTransform } from 'motion/react';
+import { motion, useMotionValue, useReducedMotion, useSpring, useTransform } from 'motion/react';
 
 /**
  * ExpenseFlow 3D app icon: a glossy ink-green tile with an extruded ivory ₹
@@ -8,6 +8,8 @@ import { motion, useMotionValue, useSpring, useTransform } from 'motion/react';
 export function AppIcon({ size = 40, tilt = false, glow = false, title = 'ExpenseFlow' }) {
   const uid = useId().replace(/:/g, '');
   const ref = useRef(null);
+  const reduce = useReducedMotion();
+  const still = reduce || (typeof window !== 'undefined' && (window.matchMedia?.('(prefers-reduced-motion: reduce)').matches || document.documentElement.dataset.motion === 'reduced'));
   const mx = useMotionValue(0);
   const my = useMotionValue(0);
   const rx = useSpring(useTransform(my, [-0.5, 0.5], [14, -14]), { stiffness: 200, damping: 18 });
@@ -64,7 +66,7 @@ export function AppIcon({ size = 40, tilt = false, glow = false, title = 'Expens
     <motion.div ref={ref} onPointerMove={onMove} onPointerLeave={onLeave}
       style={{ rotateX: rx, rotateY: ry, transformStyle: 'preserve-3d', position: 'relative', width: size, height: size }}
       initial={{ opacity: 0, scale: 0.8, rotateX: 30 }} animate={{ opacity: 1, scale: 1 }} transition={{ duration: 0.7, ease: [0.2, 0.8, 0.2, 1] }}>
-      <motion.div animate={{ y: [0, -8, 0] }} transition={{ duration: 6, repeat: Infinity, ease: 'easeInOut' }} style={{ transform: 'translateZ(40px)' }}>
+      <motion.div animate={still ? { y: 0 } : { y: [0, -8, 0] }} transition={still ? { duration: 0 } : { duration: 6, repeat: Infinity, ease: 'easeInOut' }} style={{ transform: 'translateZ(40px)' }}>
         {svg}
       </motion.div>
       <motion.div aria-hidden="true" style={{
