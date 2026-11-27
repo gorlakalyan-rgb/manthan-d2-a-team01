@@ -1,0 +1,39 @@
+# Run 1 (before fix) — 27 Nov 2026
+09:43:09Z === ExpenseFlow SRE drill: stale approval ===
+09:43:12Z [1] Baseline: oldest_pending=44.4h alert=inactive
+09:43:14Z [2] Inject fault: claim #1611 waiting on Maya Manager (on leave, no delegate); backdating step by 5 days
+09:43:17Z [3] Detect: waiting for Prometheus scrape + rule (for: 1m)
+09:43:27Z   ✓ gauge > 72h after 10s
+09:43:27Z     oldest_pending=120.0h
+09:44:28Z   ✓ alert OldestPendingApprovalTooOld FIRING after 60s
+09:44:28Z [4] Remediate (runbook §Alert OldestPendingApprovalTooOld)
+09:44:28Z     step 1 find claim: #1611 '?' age=?h
+09:44:28Z     step 2 delegation #1 Maya Manager -> Farah Head for 7 days
+09:44:28Z     step 3 approved by Farah Head on behalf of Maya Manager -> PENDING_APPROVAL:AUDITOR
+09:44:28Z [5] Verify recovery
+09:44:38Z   ✓ gauge back under 72h after 10s
+09:44:43Z   ✓ alert OldestPendingApprovalTooOld resolved after 5s
+09:44:44Z     oldest_pending=44.4h alert=inactive
+09:44:45Z     audit trail: approve_manager by 1 for 6
+09:44:45Z     cleanup: delegation removed
+09:44:45Z === drill complete ===
+
+# Run 2 (after adding the oversight queue)
+09:46:21Z === ExpenseFlow SRE drill: stale approval ===
+09:46:25Z [1] Baseline: oldest_pending=44.5h alert=inactive
+09:46:26Z [2] Inject fault: claim #1821 waiting on Maya Manager (on leave, no delegate); backdating step by 5 days
+09:46:27Z [3] Detect: waiting for Prometheus scrape + rule (for: 1m)
+09:46:37Z   ✓ gauge > 72h after 10s
+09:46:37Z     oldest_pending=120.0h
+09:47:44Z   ✓ alert OldestPendingApprovalTooOld FIRING after 66s
+09:47:44Z [4] Remediate (runbook §Alert OldestPendingApprovalTooOld)
+09:47:44Z     step 1 find claim: #1821 'Office purchase - Nov 2026' age=120.0h
+09:47:44Z     step 2 delegation #2 Maya Manager -> Farah Head for 7 days
+09:47:44Z     step 3 approved by Farah Head on behalf of Maya Manager -> APPROVED:
+09:47:44Z [5] Verify recovery
+09:47:55Z   ✓ gauge back under 72h after 10s
+09:48:00Z   ✓ alert OldestPendingApprovalTooOld resolved after 5s
+09:48:00Z     oldest_pending=44.5h alert=inactive
+09:48:02Z     audit trail: approve_manager by 1 for 6
+09:48:02Z     cleanup: delegation removed
+09:48:02Z === drill complete ===

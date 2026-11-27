@@ -92,7 +92,7 @@ export default function AuditQueue() {
       </div>
 
       <div className="row" role="group" aria-label="Queue type" style={{ marginBottom: 12 }}>
-        {[['all', 'All'], ['auditor_step', 'Auditor step'], ['sample_audit', 'Sample audit']].map(([k, label]) => (
+        {[['all', 'My actionable'], ['auditor_step', 'Auditor step'], ['sample_audit', 'Sample audit'], ['all_pending', 'All pending (oversight, oldest first)']].map(([k, label]) => (
           <button key={k} type="button" className={`btn btn-sm ${filters.kind === k ? 'btn-primary' : ''}`} aria-pressed={filters.kind === k} onClick={() => setKind(k)}>{label}</button>
         ))}
       </div>

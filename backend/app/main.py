@@ -42,6 +42,8 @@ async def csrf_and_metrics(request: Request, call_next):
     if path == "/api/receipts/{receipt_id}":
         response.headers["Content-Security-Policy"] = "default-src 'none'; img-src 'self' data:; style-src 'unsafe-inline'"
     response.headers.setdefault("X-Content-Type-Options", "nosniff")
+    response.headers.setdefault("X-Frame-Options", "DENY")
+    response.headers.setdefault("Referrer-Policy", "same-origin")
     return response
 
 
@@ -304,6 +306,11 @@ def audit_queue(kind: str = "all", department: str | None = None, category: str 
         where.append("c.total_paise <= %s"); params.append(max_paise)
     if q:
         where.append("(u.name ILIKE %s OR c.title ILIKE %s OR c.id::text = %s)"); params += [f"%{q}%", f"%{q}%", q]
+    if kind == "all_pending":
+        # Oversight view (added after SRE drill RCA): every pending claim at any step, oldest first, read-only.
+        where.append("c.status IN ('PENDING_APPROVAL','SAMPLE_AUDIT')")
+        return conn.execute(claim_summary_sql(" AND ".join(where)) +
+                            " ORDER BY coalesce(c.step_entered_at, c.submitted_at) ASC LIMIT 500", params).fetchall()
     return actionable_claims(conn, user, " AND ".join(where), tuple(params))
 
 

@@ -292,3 +292,14 @@ def test_upload_rejects_non_receipt_files(app_client):
     e = login(app_client, EMP)
     r = e.post("/api/receipts", files={"file": ("x.html", b"<script>alert(1)</script>", "image/png")}, headers=H)
     assert r.status_code == 415
+
+
+def test_oversight_queue_shows_stale_claims_at_any_step(app_client):
+    """Regression for drill finding: head could not find a claim stuck at the MANAGER step."""
+    e, h = login(app_client, EMP), login(app_client, HEAD)
+    cid = make_claim(e, [line(e, 260000, "local_cab")])
+    submit(e, cid)
+    assert not any(r["id"] == cid for r in h.get("/api/audit/queue", params={"kind": "all"}).json())
+    rows = h.get("/api/audit/queue", params={"kind": "all_pending"}).json()
+    assert any(r["id"] == cid for r in rows)
+    assert login(app_client, EMP).get("/api/audit/queue", params={"kind": "all_pending"}).status_code == 403

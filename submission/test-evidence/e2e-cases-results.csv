@@ -1,0 +1,11 @@
+case_id,title,result,evidence
+E2E-01,Clean small claim auto-approves,PASS,"claim 3007 -> APPROVED, no flags"
+E2E-02,"Missing receipt auto-rejects, fix and resubmit",PASS,claim 3008: AUTO_REJECTED -> APPROVED after receipt added
+E2E-03,Thinnest slice: routed claim to Paid (with CSV),PASS,claim 3009 MANAGER->AUDITOR->APPROVED->batch 27->PAID; CSV amount 28900.00; 7 timeline entries
+E2E-04,"Claim above 1,00,000 needs head",PASS,"claim 3010: at HEAD after auditor, in head inbox, APPROVED after head"
+E2E-05,Send back restarts the chain,PASS,claim 3011: NEEDS_CLARIFICATION with comment; resubmit restarts at MANAGER
+E2E-06,Delegate approves on behalf of manager,PASS,claim 3012: approved by Arun Auditor on behalf of Maya Manager
+E2E-07,Manager cannot approve own claim,PASS,"claim 3013: not in own inbox, no approve action, API 403 SELF_APPROVAL"
+E2E-08,Reused receipt is auto-rejected,PASS,claim 3015: AUTO_REJECTED DUPLICATE_RECEIPT_HASH
+E2E-09,Auditor filters queue and bulk approves; clears a sample,PASS,"filtered queue had 4 rows; bulk approved [3016, 3017, 3018]; sample 508 cleared and payable"
+E2E-10,Employee sees only own claims; finance dashboard,PASS,187 own claims only; colleague claim 404; dashboard KPIs ok
