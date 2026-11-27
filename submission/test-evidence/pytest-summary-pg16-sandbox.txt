@@ -1,0 +1,4 @@
+# pytest run 2026-11-27 18:04 IST — commit ce25df1 + doc-only changes
+# Database: PostgreSQL 16.15 (sandbox; Docker Hub / PG18 image not reachable from this environment)
+# Command: cd backend && pytest -q
+45 passed, 1 warning in 3.23s
