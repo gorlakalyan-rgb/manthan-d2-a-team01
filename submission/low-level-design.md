@@ -305,14 +305,14 @@ City matching for tier-1 is case-insensitive and trimmed. Policy edits (`PUT /ap
 
 ## 8. Approval chain: step planning, approver resolution, delegation
 
-Decision record: [ADR-01](adr-01-approval-chain.md). The claim stores only `status` and `current_step`; who may act is **computed** each time.
+Decision record: [ADR-01](adr-01-approval-chain.md). The claim stores `status`, `current_step` and the planned chain `required_steps` (fixed at submit); who may act is **computed** each time.
 
 **Step planning at submit** (claim outcome is ROUTE):
 1. `MANAGER` — included unless the claimant's `manager_id` is null or equals the claimant; then it is skipped and `AUDITOR` becomes mandatory regardless of total.
 2. `AUDITOR` — if `total_paise > AUDITOR_THRESHOLD` (2,500,000), or mandatory per step 1.
-3. `HEAD` — if `total_paise > HEAD_THRESHOLD` (10,000,000). Skipped if the claimant is the only head; the audit log records `head_step_skipped_self`.
+3. `HEAD` — if `total_paise > HEAD_THRESHOLD` (10,000,000). Skipped if the claimant is the only head (`workflow.plan_steps`). The skip is visible in the stored `required_steps` and in the `submit_routed` audit row's `steps` detail; there is no separate `head_step_skipped_self` event in the current code.
 
-`current_step` = first planned step. On approve, the next planned step is recomputed from the same rules (thresholds read from config at that moment, total cannot change because editing is blocked), or `APPROVED` if none remain. Send-back clears the step; resubmit re-plans from scratch (D8).
+At submit the planned chain is **stored** on the claim as `required_steps` (`workflow.py:275`) and `current_step` = its first entry. On approve, the claim advances to the next entry of the stored `required_steps` (`workflow.py:304–306`), or to `APPROVED` if none remain. Threshold edits made while a claim is mid-chain therefore do not change that claim's chain. Send-back clears the step; resubmit re-plans from scratch with the thresholds in force at that moment (D8).
 
 **Can user U act on claim C at step S?**
 
@@ -349,11 +349,11 @@ UPDATE claims
 RETURNING id;
 ```
 
-- 0 rows → `409 CONCURRENT_UPDATE` ("someone else acted first"); the transaction rolls back, so no orphan audit row.
+- 0 rows → `409 STALE_STATE` ("someone else acted first"); the transaction rolls back, so no orphan audit row.
 - Two managers (manager + delegate) clicking approve at the same instant: exactly one succeeds. Same for a double-clicked approve and for bulk approve racing a single approve.
 - `IS NOT DISTINCT FROM` makes the guard work when `current_step` is NULL.
 - Edits (`PUT /api/claims/{id}`) use the same guard on the editable status, so an edit cannot land after the claim was submitted in another tab.
-- Submit-time aggregation (meal per day): two simultaneous submits by the same employee could each see the other's meals as absent. Design: `submit` takes `pg_advisory_xact_lock(employee_id)` to serialise one employee's submits. Cheap, and it does not block other employees.
+- Submit-time aggregation: two simultaneous submits could each miss the other's meals (per-employee daily total), receipt hash or vendor+amount+date key. The duplicate checks compare **across employees** (the same receipt file filed by two people), so a per-employee lock is not enough. Implementation: `submit` takes one **global** transaction-scoped lock, `pg_advisory_xact_lock(424242)` (`workflow.py:251`), released at commit. This serialises all submits system-wide. Submit is a short transaction and the brief's volume is small, so the throughput cost is accepted; approvals, edits and reads do not take this lock.
 
 ## 10. Duplicate-payment prevention (D12)
 
@@ -373,7 +373,7 @@ Defence in depth, from cheapest to strongest:
 | CSRF | Every non-GET `/api` request must carry `X-Requested-With: ExpenseFlow`, else 403 `CSRF_HEADER_MISSING`. A cross-site form cannot set custom headers, and SameSite=Lax blocks cross-site cookie sends on POST. |
 | Authorisation | Order of checks on every claim endpoint: (1) authenticated → else 401; (2) **visible** (owner, current approver or active delegate, auditor, head) → else **404**, so ids of other people's claims are not confirmed; (3) role / current-approver / not-own-claim → else 403; (4) transition allowed from current state → else 409. |
 | Ownership | List endpoints filter in SQL (`WHERE employee_id = %s`) for the employee view; receipts are served only to the uploader or someone who can see a claim using the receipt. |
-| Audit trail | `audit_log` has a trigger `BEFORE UPDATE OR DELETE ... RAISE EXCEPTION`. The app never issues UPDATE/DELETE on it. Every transition, policy edit, delegation change, payout and `head_step_skipped_self` is logged with actor and on-behalf-of. |
+| Audit trail | `audit_log` has a trigger `BEFORE UPDATE OR DELETE ... RAISE EXCEPTION`. The app never issues UPDATE/DELETE on it. Every transition (including the planned `steps` on `submit_routed`), login, policy edit, delegation change and payout is logged with actor and on-behalf-of. |
 | Uploads | Max 5 MB (checked while streaming); allowed types jpg/png/pdf checked by **magic bytes**, not only by extension or client content type; stored under a server-generated name in a volume outside the web root; SHA-256 computed server-side; served with `Content-Disposition` and `X-Content-Type-Options: nosniff`. |
 | Injection | psycopg 3 parameterised queries only; filters in `/api/audit/queue` map to fixed SQL fragments, never string-built column names. |
 | Input validation | Pydantic models + line validation (amount 1..100000000 paise, date not future and ≤ 365 days old, hotel city + nights ≥ 1, vendor required, category in the fixed list). |
@@ -382,30 +382,30 @@ Defence in depth, from cheapest to strongest:
 
 ## 12. Ways to bypass approvals and how we block each
 
-Reviewed as a sceptical finance auditor would: "Show me the control and show me the test that proves it." Test paths are the agreed targets in `backend/tests/` and `frontend/e2e/`.
+Reviewed as a sceptical finance auditor would: "Show me the control and show me the test that proves it." Every test named below exists in `backend/tests/test_policy.py` or `backend/tests/test_api.py` (or `ops/e2e_cases.py` for the written E2E cases). Where no automated test exists yet, the row says so.
 
 | # | Bypass attempt | Control that blocks it | Proof (automated test) |
 |---|---|---|---|
-| 1 | **Self-approval**: a manager or auditor approves their own claim via the API | `can_act` rejects `user.id == claim.employee_id` → 403 `SELF_APPROVAL`; own claims never appear in own inbox | `test_workflow.py::test_owner_cannot_approve_own_claim` |
-| 2 | **Self-approval via delegation**: X delegates to Y, Y files a claim and approves it as X's delegate | Same `can_act` check runs for delegates; delegate's own claim → 403 | `test_delegation.py::test_delegate_cannot_act_on_own_claim` |
-| 3 | **Delegating to self** to look like a second pair of eyes | API 422 `DELEGATE_SELF` + DB CHECK `delegate_id <> delegator_id` | `test_delegation.py::test_cannot_delegate_to_self` |
-| 4 | **Manager with no manager** (or own `manager_id` = self) gets the manager step skipped | Skipped MANAGER step makes AUDITOR mandatory, regardless of total | `test_workflow.py::test_missing_manager_makes_auditor_mandatory` |
-| 5 | **Only head files a ₹2 lakh claim** and no other head exists | HEAD step skipped, but AUDITOR still required (> ₹25,000) and audit log records `head_step_skipped_self` | `test_workflow.py::test_sole_head_claim_skips_head_logs_event` |
-| 6 | **Acting out of turn**: auditor or head approves while the claim is at MANAGER | Only the approver of `current_step` (or their delegate) may act → 403 `NOT_CURRENT_APPROVER` | `test_workflow.py::test_auditor_cannot_act_at_manager_step` |
-| 7 | **Replaying an approve** (double click, browser retry, scripted replay) to skip the next step | Conditional UPDATE on `(status, current_step)`; replay sees a different step → 409 `CONCURRENT_UPDATE` / 403 | `test_concurrency.py::test_double_approve_only_one_wins`, `test_workflow.py::test_replayed_approve_does_not_skip_step` |
-| 8 | **Edit after approval**: change amounts once the manager has approved | PUT allowed only in DRAFT / NEEDS_CLARIFICATION / AUTO_REJECTED → 409; send-back + resubmit restarts the chain from MANAGER and re-runs policy | `test_api_claims.py::test_edit_after_submit_is_409`, `test_workflow.py::test_resubmit_restarts_chain_from_manager` |
-| 9 | **Splitting one large claim** into several ≤ ₹25,000 claims to avoid auditor/head | Thresholds use claim total; per-day meal limit and vendor+amount+date duplicate rule aggregate **across** claims; 10% sample audit of auto-approved; dashboard shows per-employee spend. **Residual risk** (honest): genuinely distinct small clean claims can still auto-approve; rolling per-employee monthly cap is backlog | `test_policy.py::test_meal_limit_sums_across_claims`, `test_policy.py::test_vendor_amount_date_duplicate_routes` |
-| 10 | **Bumping one meal across claims** (₹1,000 + ₹1,000 same day in two claims) | MEAL_DAILY_LIMIT sums the employee's non-rejected claims for that date → ROUTE | `test_policy.py::test_meal_limit_sums_across_claims` |
-| 11 | **Reusing a receipt** on a second claim | DUPLICATE_RECEIPT_HASH (SHA-256 of file bytes) → auto-reject | `test_policy.py::test_duplicate_receipt_hash_rejects` |
-| 12 | **Big clean claim auto-approved** (no flags, ₹2 lakh) | AUTO_APPROVE_MAX_TOTAL: clean claims > ₹25,000 are routed (D3) | `test_policy.py::test_clean_claim_above_25000_routes` |
-| 13 | **Direct API calls** skipping the UI (no buttons needed) | All checks are server-side; `allowed_actions` is advisory only; tests call the API with no UI | `test_api_security.py::test_employee_cannot_call_action_endpoint` |
-| 14 | **Seeing / approving another team's claim** by guessing ids | Visibility check → 404; manager sees only claims where they are current approver or delegate | `test_api_security.py::test_employee_cannot_see_other_claim_404` |
-| 15 | **Editing or deleting the audit log** to hide an action | DB trigger raises on UPDATE/DELETE of `audit_log` | `test_audit_log.py::test_audit_log_update_and_delete_raise` |
-| 16 | **Paying a claim twice** (two batches, or double mark-paid) | Only APPROVED eligible; `payout_items.claim_id UNIQUE`; conditional IN_PAYOUT→PAID | `test_payouts.py::test_claim_cannot_be_in_two_batches`, `test_payouts.py::test_mark_paid_twice_is_409` |
-| 17 | **Paying a sampled claim before audit** | SAMPLE_AUDIT is not APPROVED, so not eligible for payout | `test_payouts.py::test_sample_audit_claim_not_eligible` |
-| 18 | **Bulk approve sneaking in claims at the wrong step** | Bulk runs `can_act` per claim; failures come back per item with an error, others unaffected | `test_approvals.py::test_bulk_approve_reports_per_item_errors` |
-| 19 | **Cross-site request** making a logged-in head approve | CSRF header required on non-GET + SameSite=Lax cookie → 403 | `test_api_security.py::test_post_without_csrf_header_is_403` |
-| 20 | **Raising a limit** just before submitting your own claim | Policy edit is head-only and audited with old/new value; visible in audit log and timeline | `test_api_policy.py::test_policy_update_requires_head_and_is_audited` |
+| 1 | **Self-approval**: a manager or auditor approves their own claim via the API | `can_act` rejects `user.id == claim.employee_id` → 403 `SELF_APPROVAL`; own claims never appear in own inbox | `test_api.py::test_self_approval_blocked`; E2E-07 |
+| 2 | **Self-approval via delegation**: X delegates to Y, Y files a claim and approves it as X's delegate | Same `can_act` check runs for delegates; delegate's own claim → 403 | `test_api.py::test_delegate_cannot_approve_own_claim` |
+| 3 | **Delegating to self** to look like a second pair of eyes | API 422 `SELF_DELEGATION` + DB CHECK `delegate_id <> delegator_id` | `test_api.py::test_delegation_lets_delegate_act_on_behalf_and_is_audited` (first assertion: delegate to self → 422). DB CHECK `delegator_id <> delegate_id` in `schema.sql` |
+| 4 | **Manager with no manager** (or own `manager_id` = self) gets the manager step skipped | Skipped MANAGER step makes AUDITOR mandatory, regardless of total | Not automated (logic in `workflow.plan_steps`; `users` CHECK `manager_id <> id` blocks the self-manager case) |
+| 5 | **Only head files a ₹2 lakh claim** and no other head exists | HEAD step skipped, but AUDITOR still required (> ₹25,000); the stored `required_steps` and the `submit_routed` audit row show the reduced chain | Not automated (logic in `workflow.plan_steps`) |
+| 6 | **Acting out of turn**: auditor or head approves while the claim is at MANAGER | Only the approver of `current_step` (or their delegate) may act → 403 `NOT_CURRENT_APPROVER` | `test_api.py::test_above_1_lakh_goes_manager_auditor_head` (auditor at MANAGER step → 403) |
+| 7 | **Replaying an approve** (double click, browser retry, scripted replay) to skip the next step | Conditional UPDATE on `(status, current_step)`; replay sees a different step → 409 `STALE_STATE` / 403 | `test_api.py::test_parallel_approvals_only_one_wins` (8 concurrent approves → one 200, seven 409) |
+| 8 | **Edit after approval**: change amounts once the manager has approved | PUT allowed only in DRAFT / NEEDS_CLARIFICATION / AUTO_REJECTED → 409; send-back + resubmit restarts the chain from MANAGER and re-runs policy | `test_api.py::test_send_back_restarts_chain_from_manager`, `test_api.py::test_reject_is_terminal` (resubmit after REJECTED → 409) |
+| 9 | **Splitting one large claim** into several ≤ ₹25,000 claims to avoid auditor/head | Thresholds use claim total; per-day meal limit and vendor+amount+date duplicate rule aggregate **across** claims; 10% sample audit of auto-approved; dashboard shows per-employee spend. **Residual risk** (honest): genuinely distinct small clean claims can still auto-approve; rolling per-employee monthly cap is backlog | `test_policy.py::test_meal_limit_counts_other_claims_same_day`, `test_policy.py::test_vendor_amount_date_duplicate_routes` |
+| 10 | **Bumping one meal across claims** (₹1,000 + ₹1,000 same day in two claims) | MEAL_DAILY_LIMIT sums the employee's non-rejected claims for that date → ROUTE | `test_policy.py::test_meal_limit_counts_other_claims_same_day` |
+| 11 | **Reusing a receipt** on a second claim | DUPLICATE_RECEIPT_HASH (SHA-256 of file bytes) → auto-reject | `test_policy.py::test_same_receipt_hash_on_earlier_claim_rejects`, `test_api.py::test_reused_receipt_file_auto_rejects_second_claim` |
+| 12 | **Big clean claim auto-approved** (no flags, ₹2 lakh) | AUTO_APPROVE_MAX_TOTAL: clean claims > ₹25,000 are routed (D3) | `test_policy.py::test_clean_claim_above_auto_approve_cap_routes` |
+| 13 | **Direct API calls** skipping the UI (no buttons needed) | All checks are server-side; `allowed_actions` is advisory only; tests call the API with no UI | `test_api.py::test_employee_cannot_use_head_endpoints`, `test_api.py::test_self_approval_blocked` (both call the API with no UI) |
+| 14 | **Seeing / approving another team's claim** by guessing ids | Visibility check → 404; manager sees only claims where they are current approver or delegate | `test_api.py::test_employee_sees_only_own_claims` (GET and PUT → 404) |
+| 15 | **Editing or deleting the audit log** to hide an action | DB trigger raises on UPDATE/DELETE of `audit_log` | `test_api.py::test_audit_log_is_append_only` |
+| 16 | **Paying a claim twice** (two batches, or double mark-paid) | Only APPROVED eligible; `payout_items.claim_id UNIQUE`; conditional IN_PAYOUT→PAID | `test_api.py::test_payout_batch_csv_and_no_double_payment` (second batch → 409, second mark-paid → 409) |
+| 17 | **Paying a sampled claim before audit** | SAMPLE_AUDIT is not APPROVED, so not eligible for payout | `test_api.py::test_sample_audit_claims_not_payable_until_cleared` |
+| 18 | **Bulk approve sneaking in claims at the wrong step** | Bulk runs `can_act` per claim; failures come back per item with an error, others unaffected | Not automated in pytest; covered by E2E-09 (`ops/e2e_cases.py`, bulk approve with per-item results) |
+| 19 | **Cross-site request** making a logged-in head approve | CSRF header required on non-GET + SameSite=Lax cookie → 403 | `test_api.py::test_bad_password_and_csrf` (POST without `X-Requested-With` → 403) |
+| 20 | **Raising a limit** just before submitting your own claim | Policy edit is head-only and audited with old/new value; visible in audit log and timeline | `test_api.py::test_employee_cannot_use_head_endpoints` (employee PUT /api/policy → 403), `test_api.py::test_policy_change_by_head_takes_effect_without_code_change` |
 
 ## 13. Observability
 

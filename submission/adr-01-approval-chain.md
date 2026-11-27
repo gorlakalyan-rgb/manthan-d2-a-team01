@@ -34,7 +34,7 @@ A `claim_approvals(claim_id, seq, step, approver_id, status)` table filled at su
 - Pro: Delegation and leave work immediately, because resolution happens when the person acts.
 - Pro: Send-back is just `current_step = NULL`; resubmit re-plans.
 - Pro: The same `can_act` drives the inbox, `allowed_actions` and the action endpoint, so UI and server cannot disagree.
-- Con: The future chain is not stored; the UI derives "next: Auditor, then Head" from the total.
+- Note (as built): the planned step list is stored on the claim as `required_steps text[]` (`schema.sql:49`, set at submit in `workflow.py:275`). It is a list of step names, not approver rows, so it keeps the "resolve the approver at action time" benefit of this option.
 - Con: AUDITOR and HEAD steps are pools (any auditor / any head), not named people. This is what the brief describes.
 
 ### (c) Generic workflow engine / BPMN (e.g. Camunda, Temporal, a homegrown engine)
@@ -49,13 +49,13 @@ Choose **(b)**. A claim carries `status` and `current_step`. On submit, `workflo
 
 1. MANAGER, unless `manager_id` is null or the claimant; then AUDITOR becomes mandatory.
 2. AUDITOR if `total_paise > AUDITOR_THRESHOLD`.
-3. HEAD if `total_paise > HEAD_THRESHOLD`, skipped (and logged `head_step_skipped_self`) if the claimant is the only head.
+3. HEAD if `total_paise > HEAD_THRESHOLD`, skipped if the claimant is the only head (the reduced chain is visible in `required_steps` and in the `submit_routed` audit row).
 
-`current_step` is set to the first step. Each approve moves to the next planned step or to `APPROVED`. `can_act` checks the user is the step's approver or an active delegate of that approver, and is never the claimant. Every transition is a conditional UPDATE plus an audit row in one transaction.
+The planned list is stored as `required_steps` and `current_step` is set to its first entry. Each approve moves to the next entry of the stored `required_steps` (`workflow.py:304–306`) or to `APPROVED`. `can_act` checks the user is the step's approver or an active delegate of that approver, and is never the claimant. Every transition is a conditional UPDATE plus an audit row in one transaction.
 
 ## Consequences
 
 - **Positive:** small, readable state machine (one table of transitions in `workflow.py` mirrors CLAUDE.md); race-free approvals; delegation and leave need no data repair; every bypass in the LLD bypass table maps to one check in `can_act` or the conditional UPDATE.
-- **Negative:** the planned chain is recomputed, not stored, so if a head changes `AUDITOR_THRESHOLD` while a claim is mid-chain, the remaining steps follow the new value. We accept this; policy edits are audited and rare. The timeline (audit log) still shows exactly who approved what.
+- **Positive (as built):** the planned chain is stored at submit (`required_steps`), so if a head changes `AUDITOR_THRESHOLD` or `HEAD_THRESHOLD` while a claim is mid-chain, that claim keeps the chain it was submitted with. A threshold edit cannot add or remove steps from claims already in flight. A send-back + resubmit re-plans with the thresholds in force at that time. Policy edits are audited.
 - **Negative:** no parallel approvals or per-department custom chains. Not needed for the brief; would need option (a) or (c) later.
 - **Follow-ups:** tests for every row in the state table, for delegation windows (first and last day inclusive), for self-approval through delegation, and a concurrency test with two simultaneous approves.
