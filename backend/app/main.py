@@ -364,6 +364,101 @@ def approvers(user=Depends(current_user), conn=Depends(get_conn)):
                            ORDER BY u.role, u.name""", (user["id"],)).fetchall()
 
 
+# ------------------------------------------------------------------ employee directory (finance head only)
+EMPLOYEE_STATS_SQL = """
+    SELECT u.id, u.name, u.email, u.role, d.name AS department, u.department_id, u.manager_id, m.name AS manager_name,
+           '••••' || right(u.account_ref, 4) AS account_masked, u.ifsc,
+           (SELECT count(*) FROM users r WHERE r.manager_id = u.id)::int AS direct_reports,
+           EXISTS (SELECT 1 FROM delegations g WHERE (g.delegator_id = u.id OR g.delegate_id = u.id)
+                   AND current_date BETWEEN g.start_date AND g.end_date) AS delegation_active,
+           count(c.id) FILTER (WHERE c.status <> 'DRAFT')::int AS claims,
+           coalesce(sum(c.total_paise) FILTER (WHERE c.status <> 'DRAFT'), 0)::bigint AS claimed_paise,
+           coalesce(sum(c.total_paise) FILTER (WHERE c.status IN ('APPROVED','IN_PAYOUT','PAID')), 0)::bigint AS approved_paise,
+           coalesce(sum(c.total_paise) FILTER (WHERE c.status = 'PAID'), 0)::bigint AS paid_paise,
+           coalesce(sum(c.total_paise) FILTER (WHERE c.status IN ('PENDING_APPROVAL','SAMPLE_AUDIT','NEEDS_CLARIFICATION')), 0)::bigint AS pending_paise,
+           count(c.id) FILTER (WHERE c.status IN ('PENDING_APPROVAL','SAMPLE_AUDIT','NEEDS_CLARIFICATION'))::int AS pending_claims,
+           count(c.id) FILTER (WHERE c.status IN ('REJECTED','AUTO_REJECTED'))::int AS rejected_claims,
+           count(c.id) FILTER (WHERE c.status <> 'DRAFT' AND cardinality(c.flags) > 0)::int AS flagged_claims,
+           max(c.submitted_at) AS last_claim_at
+    FROM users u JOIN departments d ON d.id = u.department_id
+    LEFT JOIN users m ON m.id = u.manager_id
+    LEFT JOIN claims c ON c.employee_id = u.id
+    WHERE {where}
+    GROUP BY u.id, d.name, m.name"""
+
+
+TEAM_SQL = """u.id IN (WITH RECURSIVE team AS (SELECT id FROM users WHERE manager_id = %s
+                       UNION SELECT r.id FROM users r JOIN team t ON r.manager_id = t.id) SELECT id FROM team)"""
+
+
+def directory_scope(conn, user) -> tuple[str, list]:
+    """Head and auditors see everyone; managers see their whole reporting tree; others are refused."""
+    if user["role"] in ("head", "auditor"):
+        return "TRUE", []
+    has_reports = conn.execute("SELECT EXISTS (SELECT 1 FROM users WHERE manager_id = %s)", (user["id"],)).fetchone()
+    if user["role"] == "manager" or (has_reports and list(has_reports.values())[0]):
+        return TEAM_SQL, [user["id"]]
+    raise err(403, "FORBIDDEN_ROLE", "You don't have permission for this action.")
+
+
+def hide_bank(row: dict, user) -> dict:
+    if user["role"] not in ("head", "auditor"):
+        row = dict(row)
+        row["account_masked"] = None
+        row["ifsc"] = None
+    return row
+
+
+@app.get("/api/employees")
+def employees(user=Depends(current_user), conn=Depends(get_conn)):
+    where, params = directory_scope(conn, user)
+    rows = conn.execute(EMPLOYEE_STATS_SQL.format(where=where) + " ORDER BY u.name", params).fetchall()
+    return [hide_bank(r, user) for r in rows]
+
+
+@app.get("/api/employees/{employee_id}")
+def employee_detail(employee_id: int, user=Depends(current_user), conn=Depends(get_conn)):
+    where, params = directory_scope(conn, user)
+    emp = conn.execute(EMPLOYEE_STATS_SQL.format(where=f"u.id = %s AND {where}"), (employee_id, *params)).fetchone()
+    if not emp:
+        raise err(404, "NOT_FOUND", "Employee not found or not in your team.")
+    emp = hide_bank(emp, user)
+    spend = ("APPROVED", "IN_PAYOUT", "PAID")
+    by_month = conn.execute(
+        """SELECT to_char(date_trunc('month', submitted_at AT TIME ZONE 'Asia/Kolkata'), 'YYYY-MM') AS label,
+                  sum(total_paise)::bigint AS value
+           FROM claims WHERE employee_id = %s AND status = ANY(%s)
+             AND submitted_at >= date_trunc('month', now()) - interval '11 months'
+           GROUP BY 1 ORDER BY 1""", (employee_id, list(spend))).fetchall()
+    by_category = conn.execute(
+        """SELECT l.category AS label, sum(l.amount_paise)::bigint AS value
+           FROM claim_lines l JOIN claims c ON c.id = l.claim_id
+           WHERE c.employee_id = %s AND c.status = ANY(%s) GROUP BY 1 ORDER BY 2 DESC""",
+        (employee_id, list(spend))).fetchall()
+    flags = conn.execute(
+        """SELECT f AS label, count(*)::int AS value FROM claims c, unnest(c.flags) f
+           WHERE c.employee_id = %s AND c.status <> 'DRAFT' GROUP BY 1 ORDER BY 2 DESC""", (employee_id,)).fetchall()
+    by_status = conn.execute(
+        """SELECT status AS label, count(*)::int AS value FROM claims
+           WHERE employee_id = %s AND status <> 'DRAFT' GROUP BY 1 ORDER BY 2 DESC""", (employee_id,)).fetchall()
+    recent = conn.execute(claim_summary_sql("c.employee_id = %s AND c.status <> 'DRAFT'")
+                          + " ORDER BY c.submitted_at DESC NULLS LAST LIMIT 25", (employee_id,)).fetchall()
+    reports = conn.execute(
+        """SELECT u.id, u.name, u.role, d.name AS department FROM users u JOIN departments d ON d.id = u.department_id
+           WHERE u.manager_id = %s ORDER BY u.name""", (employee_id,)).fetchall()
+    chain, mid, seen = [], emp["manager_id"], set()
+    while mid and mid not in seen and len(chain) < 6:
+        seen.add(mid)
+        row = conn.execute("""SELECT u.id, u.name, u.role, u.manager_id, d.name AS department FROM users u
+                              JOIN departments d ON d.id = u.department_id WHERE u.id = %s""", (mid,)).fetchone()
+        if not row:
+            break
+        chain.append(row)
+        mid = row["manager_id"]
+    return {"employee": emp, "by_month": by_month, "by_category": by_category, "flags": flags,
+            "by_status": by_status, "recent_claims": recent, "direct_reports": reports, "manager_chain": chain}
+
+
 # ------------------------------------------------------------------ payouts
 @app.get("/api/payouts/eligible")
 def payout_eligible(user=Depends(require_roles("head")), conn=Depends(get_conn)):

@@ -303,3 +303,18 @@ def test_oversight_queue_shows_stale_claims_at_any_step(app_client):
     rows = h.get("/api/audit/queue", params={"kind": "all_pending"}).json()
     assert any(r["id"] == cid for r in rows)
     assert login(app_client, EMP).get("/api/audit/queue", params={"kind": "all_pending"}).status_code == 403
+
+
+def test_employee_directory_scoping(app_client):
+    head, aud, mgr, emp = (login(app_client, e) for e in (HEAD, AUD, MGR, EMP))
+    everyone = head.get("/api/employees").json()
+    assert len(everyone) >= 5 and everyone[0]["ifsc"]
+    assert len(aud.get("/api/employees").json()) == len(everyone)
+    team = mgr.get("/api/employees").json()
+    assert team and all(r["ifsc"] is None for r in team)          # managers never see bank details
+    assert len(team) < len(everyone)
+    assert emp.get("/api/employees").status_code == 403
+    me = head.get("/api/auth/me").json()["user"]
+    assert mgr.get(f"/api/employees/{me['id']}").status_code == 404  # outside the manager's reporting line
+    detail = head.get(f"/api/employees/{team[0]['id']}").json()
+    assert {"employee", "by_month", "by_category", "flags", "recent_claims", "direct_reports", "manager_chain"} <= detail.keys()

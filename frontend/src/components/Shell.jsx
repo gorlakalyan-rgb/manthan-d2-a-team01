@@ -3,7 +3,7 @@ import { NavLink, useLocation, useNavigate } from 'react-router-dom';
 import { AnimatePresence, LayoutGroup, motion } from 'motion/react';
 import {
   Banknote, Bell, ChevronsLeft, ChevronsRight, CircleHelp, FilePlus2, History, Inbox, Keyboard, LayoutDashboard,
-  LogOut, Moon, Palette, Receipt, Scale, Search, Settings, ShieldCheck, Sun, User, UserCog, WifiOff, ArrowRight, Hash,
+  LogOut, Moon, Palette, Receipt, Scale, Search, Settings, ShieldCheck, Sun, User, UserCog, Users, WifiOff, ArrowRight, Hash,
   CornerDownLeft, AlertTriangle, CheckCircle2,
 } from 'lucide-react';
 import { roleCaps, useAuth } from '../auth.jsx';
@@ -20,6 +20,7 @@ export function navFor(user) {
     { to: '/claims', label: 'My claims', icon: Receipt, show: true, badge: 'mine', key: 'c' },
     { to: '/approvals', label: 'Approvals', icon: Inbox, show: c.isApprover, badge: 'inbox', key: 'a' },
     { to: '/audit', label: 'Audit queue', icon: ShieldCheck, show: c.isAuditor, badge: 'audit', key: 'q' },
+    { to: '/employees', label: 'Employee details', icon: Users, show: c.isApprover, key: 'e' },
     { section: 'Finance' },
     { to: '/payouts', label: 'Payouts', icon: Banknote, show: c.isHead, key: 'p' },
     { to: '/policy', label: 'Policy', icon: Scale, show: true, key: 'l' },
@@ -232,6 +233,7 @@ export const SHORTCUTS = [
   ['Go to my claims', ['G', 'C']],
   ['Go to approvals', ['G', 'A']],
   ['Go to audit queue', ['G', 'Q']],
+  ['Go to employee details', ['G', 'E']],
   ['Go to settings', ['G', 'S']],
   ['Review: approve', ['A']],
   ['Review: send back', ['S']],
@@ -307,7 +309,7 @@ function LogoutButton() {
 /* ------------------------------------------------------------------ shell */
 const TITLES = {
   claims: 'My claims', approvals: 'Approvals', audit: 'Audit queue', dashboard: 'Dashboard', payouts: 'Payouts', policy: 'Policy',
-  delegations: 'Delegation', profile: 'Profile', settings: 'Settings', activity: 'Audit trail',
+  delegations: 'Delegation', employees: 'Employee details', profile: 'Profile', settings: 'Settings', activity: 'Audit trail',
 };
 
 export default function Shell({ children }) {

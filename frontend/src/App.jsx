@@ -18,6 +18,7 @@ import Dashboard from './pages/Dashboard.jsx';
 import Profile from './pages/Profile.jsx';
 import SettingsPage from './pages/Settings.jsx';
 import Activity from './pages/Activity.jsx';
+import Employees from './pages/Employees.jsx';
 
 function homeFor(user) {
   const caps = roleCaps(user);
@@ -48,6 +49,7 @@ function Guard({ allow, children }) {
 
 const approverOnly = Object.assign((c) => c.isApprover, { label: 'approvers' });
 const auditorOnly = Object.assign((c) => c.isAuditor, { label: 'finance auditors and the finance head' });
+const peopleOnly = Object.assign((c) => c.isApprover, { label: 'managers, finance auditors and the finance head' });
 const headOnly = Object.assign((c) => c.isHead, { label: 'the finance head' });
 
 export default function App() {
@@ -90,6 +92,7 @@ export default function App() {
         <Route path="/policy" element={<Policy />} />
         <Route path="/profile" element={<Profile />} />
         <Route path="/settings" element={<SettingsPage />} />
+        <Route path="/employees" element={<Guard allow={peopleOnly}><Employees /></Guard>} />
         <Route path="/activity" element={<Guard allow={auditorOnly}><Activity /></Guard>} />
         <Route path="*" element={
           <div className="card state"><span className="state-icon"><Compass /></span><h1>Page not found</h1><p>That page does not exist or has moved.</p><NavLink className="btn btn-primary" to="/">Go home</NavLink></div>
